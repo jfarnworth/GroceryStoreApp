@@ -11,6 +11,7 @@ from decimal import Decimal, ROUND_HALF_UP
 import dataset
 import datetime
 import ast
+import os
 
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter, QPrintDialog
 
@@ -431,6 +432,11 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_delete_btn.setEnabled(False)
         self.mp_update_btn.setEnabled(False)
 
+    def handle_import_spreadsheet_btn(self):
+        if sys.platform == 'win32':
+            os.startfile()
+        else:
+            subprocess.Popen(['xdg-open'])
     #########################################
     # Manage Orders Functions
     #########################################
