@@ -34,7 +34,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="manage_employees_tab">
      <attribute name="title">
@@ -485,7 +485,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Quantity</string>
+        <string>&amp;Quantity</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_19">
@@ -502,6 +502,19 @@
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="mp_import_btn">
+       <property name="geometry">
+        <rect>
+         <x>300</x>
+         <y>118</y>
+         <width>183</width>
+         <height>35</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Import Spreadsheet</string>
        </property>
       </widget>
      </widget>
