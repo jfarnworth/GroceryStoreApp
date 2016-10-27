@@ -1,5 +1,5 @@
 from ui import smith_ui, login_ui, payment_ui
-from classes import employee, product
+from classes import employee, product, receipt
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -10,6 +10,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 import dataset
 import datetime
+import ast
 
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter, QPrintDialog
 
@@ -149,6 +150,24 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_update_btn.clicked.connect(self.handle_update_product)
 
         #########################################
+        # Manage Order Initializing
+        #########################################
+        self.receipts_table = self.db['receipts']
+        self.initialize_manage_orders_tab()
+        self.populate_mo_listview()
+
+        # Connections
+        self.mo_date_edit.dateChanged.connect(self.populate_mo_listview)
+        self.mo_receipt_date_listview.clicked.connect(self.load_receipt)
+        self.mo_receipt_listview.clicked.connect(self.enable_mo_remove_btn)
+        self.mo_return_btn.clicked.connect(self.mo_handle_remove_item)
+        self.mo_search_btn.clicked.connect(self.load_receipt_from_search)
+
+        #########################################
+        # Report Initializing
+        #########################################
+
+        #########################################
         # Begin Checkout Initializing
         #########################################
         self.reset_checkout()
@@ -206,20 +225,24 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
         if self.current_employee.role == 0:
             self.tabWidget.insertTab(0, self.begin_checkout_tab, "Begin Checkout")
-
+            self.tabWidget.insertTab(0, self.reports_tab, "Reports")
+            self.tabWidget.insertTab(0, self.manage_orders_tab, "Manage Orders")
             self.tabWidget.insertTab(0, self.manage_products_tab, "Manage Products")
 
             self.tabWidget.insertTab(0, self.manage_employees_tab, "Manage Employees")
+
+
             self.populate_me_employee_list_view()
 
             self.tabWidget.setCurrentIndex(0)
         elif self.current_employee.role == 1:
             self.tabWidget.insertTab(0, self.begin_checkout_tab, "Begin Checkout")
-            self.tabWidget.setCurrentIndex(0)
+            self.tabWidget.insertTab(0, self.manage_orders_tab, "Manage Orders")
+            self.tabWidget.setCurrentIndex(1)
 
-        #########################################
-        # Manage Employee Functions
-        #########################################
+    #########################################
+    # Manage Employee Functions
+    #########################################
 
     def populate_me_employee_list_view(self):
         """Read employee list into Manage Employees List View"""
@@ -409,6 +432,199 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_update_btn.setEnabled(False)
 
     #########################################
+    # Manage Orders Functions
+    #########################################
+    def initialize_manage_orders_tab(self):
+        self.mo_date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
+        self.mo_date_lbl.setText(str(self.mo_date_edit.date().toString("MMMM dd, yyyy")))
+        print("Manage Order init")
+
+    def populate_mo_listview(self):
+        self.receipt_list = []
+        self.mo_date_lbl.setText(str(self.mo_date_edit.date().toString("MMMM dd, yyyy")))
+        self.receipt_call = self.receipts_table.find(date=self.mo_date_edit.date().toString("M/dd/yyyy"))
+
+        for rec in self.receipt_call:
+            name = ast.literal_eval(rec['name'])
+            price = ast.literal_eval(rec['price'])
+            quantity = ast.literal_eval(rec['quantity'])
+            text = ast.literal_eval(rec['text'])
+            other = ast.literal_eval(rec['other'])
+
+            self.receipt_list.append(receipt.Receipt(rec['date'], name, price, quantity, text, other))
+
+        self.mo_receipt_date_list_model = QStandardItemModel(self.mo_receipt_date_listview)
+
+        for receip in self.receipt_list:
+            item = QStandardItem(receip.other[0] + '-----$' + str(receip.other[6]))
+            self.mo_receipt_date_list_model.appendRow(item)
+
+        self.mo_receipt_date_listview.setModel(self.mo_receipt_date_list_model)
+
+    def load_receipt(self):
+        # self.current_receipt = None
+        self.mo_receipt_frame.setEnabled(True)
+        self.current_receipt = self.receipt_list[self.mo_receipt_date_listview.selectedIndexes()[0].row()]
+
+        self.mo_r_id_lbl.setText(str(self.current_receipt.other[0]))
+        self.mo_r_date_lbl.setText(str(self.current_receipt.other[1]))
+        emply = self.employees_table.find_one(id=self.current_receipt.other[2])
+        self.mo_r_cashier_lbl.setText(str(emply['name']))
+        self.mo_r_method_lbl.setText(str(self.current_receipt.other[3]))
+
+        print(str(self.current_receipt.other))
+
+        self.mo_subtotal = Decimal(self.current_receipt.other[4]).quantize(self.cents, ROUND_HALF_UP)
+        self.mo_tax = Decimal(self.current_receipt.other[5]).quantize(self.cents, ROUND_HALF_UP)
+        self.mo_total = Decimal(self.current_receipt.other[6]).quantize(self.cents, ROUND_HALF_UP)
+
+        self.mo_r_subtotal_lbl.setText("$" + str(self.mo_subtotal))
+        self.mo_tax_lbl.setText("$" + str(self.mo_tax))
+        self.mo_total_lbl.setText("$" + str(self.mo_total))
+
+        self.mo_receipt_list_model = QStandardItemModel(self.mo_receipt_listview)
+        self.mo_receipt_list_model.clear()
+
+        for i in range(0, len(self.current_receipt.names)):
+            if isinstance(self.current_receipt.quantity[i], int):
+                item = QStandardItem(self.current_receipt.text[i] + " (" + str(self.current_receipt.quantity[i]) + ")\n$" + str(Decimal(int(self.current_receipt.quantity[i]) * float(self.current_receipt.price[i])).quantize(self.cents, ROUND_HALF_UP)))
+            else:
+                item = QStandardItem(self.current_receipt.text[i] + " (" + str(self.current_receipt.quantity[i]) + " lbs)\n$" + str(Decimal(Decimal(self.current_receipt.quantity[i]) * Decimal(self.current_receipt.price[i])).quantize(self.cents, ROUND_HALF_UP)))
+            self.mo_receipt_list_model.appendRow(item)
+
+        self.mo_receipt_listview.setModel(self.mo_receipt_list_model)
+        # TODO
+
+    def load_receipt_from_search(self):
+        self.receipts_table = self.db['receipts']
+        try:
+            rpt = self.receipts_table.find_one(r_id=int(self.mo_id_search_field.text()))
+            name = ast.literal_eval(rpt['name'])
+            price = ast.literal_eval(rpt['price'])
+            quantity = ast.literal_eval(rpt['quantity'])
+            text = ast.literal_eval(rpt['text'])
+            other = ast.literal_eval(rpt['other'])
+
+            self.current_receipt = receipt.Receipt(rpt['date'], name, price, quantity, text, other)
+
+
+            self.mo_receipt_frame.setEnabled(True)
+
+            self.mo_r_id_lbl.setText(str(self.current_receipt.other[0]))
+            self.mo_r_date_lbl.setText(str(self.current_receipt.other[1]))
+            emply = self.employees_table.find_one(id=self.current_receipt.other[2])
+            self.mo_r_cashier_lbl.setText(str(emply['name']))
+            self.mo_r_method_lbl.setText(str(self.current_receipt.other[3]))
+
+            print(str(self.current_receipt.other))
+
+            self.mo_subtotal = Decimal(self.current_receipt.other[4]).quantize(self.cents, ROUND_HALF_UP)
+            self.mo_tax = Decimal(self.current_receipt.other[5]).quantize(self.cents, ROUND_HALF_UP)
+            self.mo_total = Decimal(self.current_receipt.other[6]).quantize(self.cents, ROUND_HALF_UP)
+
+            self.mo_r_subtotal_lbl.setText("$" + str(self.mo_subtotal))
+            self.mo_tax_lbl.setText("$" + str(self.mo_tax))
+            self.mo_total_lbl.setText("$" + str(self.mo_total))
+
+            self.mo_receipt_list_model = QStandardItemModel(self.mo_receipt_listview)
+            self.mo_receipt_list_model.clear()
+
+            for i in range(0, len(self.current_receipt.names)):
+                if isinstance(self.current_receipt.quantity[i], int):
+                    item = QStandardItem(self.current_receipt.text[i] + " (" + str(self.current_receipt.quantity[i]) + ")\n$" + str(Decimal(int(self.current_receipt.quantity[i]) * float(self.current_receipt.price[i])).quantize(self.cents, ROUND_HALF_UP)))
+                else:
+                    item = QStandardItem(self.current_receipt.text[i] + " (" + str(self.current_receipt.quantity[i]) + " lbs)\n$" + str(Decimal(Decimal(self.current_receipt.quantity[i]) * Decimal(self.current_receipt.price[i])).quantize(self.cents, ROUND_HALF_UP)))
+                self.mo_receipt_list_model.appendRow(item)
+
+            self.mo_receipt_listview.setModel(self.mo_receipt_list_model)
+        except:
+            self.statusbar.showMessage("Search Error--Please enter a valid Receipt ID", 4000)
+
+
+
+    def enable_mo_remove_btn(self):
+        self.mo_btn_frame.setEnabled(True)
+
+    def mo_handle_remove_item(self):
+        """Removes selected item from listview and receipt lists"""
+        try:
+            row = self.mo_receipt_listview.selectedIndexes()[0].row()
+
+            # print("row: " + str(row))
+            # print("Quantity: {}\nPrice: {}".format(str(self.current_receipt.quantity[row]), str(self.current_receipt.price[row])))
+            # UPDATE TOTALS
+            if not isinstance(self.current_receipt.quantity[row], int):
+                self.mo_subtotal -= Decimal(float(self.current_receipt.quantity[row]) * float(self.current_receipt.price[row])).quantize(self.cents, ROUND_HALF_UP)
+                self.mo_tax -= Decimal((float(self.current_receipt.quantity[row]) * float(Decimal(float(self.current_receipt.price[row])) * self.tax_rate.quantize(self.cents, ROUND_HALF_UP)))).quantize(self.cents, ROUND_HALF_UP)
+                self.mo_total -= \
+                    Decimal(
+                        float(self.current_receipt.quantity[row]) * float(self.current_receipt.price[row]))\
+                        .quantize(self.cents, ROUND_HALF_UP) + Decimal(
+                        (Decimal(self.current_receipt.quantity[row]) * Decimal(self.current_receipt.price[row])) * self.tax_rate).quantize(self.cents, ROUND_HALF_UP)
+            else:
+                self.mo_subtotal -= Decimal(int(self.current_receipt.quantity[row]) * Decimal(self.current_receipt.price[row]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP)
+                self.mo_tax -= Decimal((int(self.current_receipt.quantity[row]) * Decimal(self.current_receipt.price[row])) * self.tax_rate).quantize(self.cents, ROUND_HALF_UP)
+                self.mo_total -= Decimal(int(self.current_receipt.quantity[row])
+                                        * Decimal(self.current_receipt.price[row]).quantize(self.cents,ROUND_HALF_UP)).quantize(self.cents,ROUND_HALF_UP) \
+                                        + Decimal((int(self.current_receipt.quantity[row])
+                                        * Decimal(self.current_receipt.price[row]))
+                                        * self.tax_rate).quantize(self.cents, ROUND_HALF_UP)
+
+            # Update totals labels
+            self.mo_r_subtotal_lbl.setText('$' + str(Decimal(self.mo_subtotal).quantize(self.cents, ROUND_HALF_UP)))
+            self.mo_tax_lbl.setText('$' + str(Decimal(self.mo_tax).quantize(self.cents, ROUND_HALF_UP)))
+            self.mo_total_lbl.setText('$' + str(Decimal(self.mo_total).quantize(self.cents, ROUND_HALF_UP)))
+
+            self.current_receipt.other[4] = str(self.mo_subtotal)
+            self.current_receipt.other[5] = str(self.mo_tax)
+            self.current_receipt.other[6] = str(self.mo_total)
+
+            self.mo_receipt_list_model.removeRow(row)
+
+            self.mo_update_inventory(row)
+
+            self.current_receipt.names.pop(row)
+            self.current_receipt.text.pop(row)
+            self.current_receipt.quantity.pop(row)
+            self.current_receipt.price.pop(row)
+
+
+            self.mo_update_receipt()
+            self.populate_mo_listview()
+
+        except IndexError:  # If no items are selected
+            self.statusbar.showMessage("Index Error--Please select an item", 4000)
+
+    def mo_update_inventory(self, row):
+        try:
+            # print("Row #:" + str(row))
+            # print("Why are you not working?")
+            # print(str(self.current_receipt.names))
+            # print("Product Barcode: " + str(self.current_receipt.names[row]))
+            self.products_table = self.db['products']
+            # print("Successful connection to product db")
+            prod = self.products_table.find_one(barcode=int(self.current_receipt.names[row]))
+            # print("Successful prodcut barcode: " + str(prod['name']))
+            if prod['weigh_b']:
+                new_quantity = Decimal(prod['available_units']).quantize(self.cents, ROUND_HALF_UP) + Decimal(self.current_receipt.quantity[row]).quantize(self.cents, ROUND_HALF_UP)
+            else:
+                new_quantity = int(prod['available_units']) + self.current_receipt.quantity[row]
+            self.products_table.update(dict(barcode=prod['barcode'], available_units=str(new_quantity)), ['barcode'])
+
+        except:
+            self.statusbar.showMessage("Error updating inventory", 4000)
+            print("Error updating inventory")
+
+    def mo_update_receipt(self):
+        print("Updating receipt")
+        self.receipts_table = self.db['receipts']
+        self.receipts_table.update(dict(other=str(self.current_receipt.other), name=str(self.current_receipt.names), quantity=str(self.current_receipt.quantity), price=str(self.current_receipt.price), text=str(self.current_receipt.text), r_id=self.current_receipt.other[0]), ['r_id'])
+
+    #########################################
+    # Reports Functions
+    #########################################
+
+    #########################################
     # Begin Checkout Functions
     #########################################
     def begin_checkout(self):
@@ -520,7 +736,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.receipt_names.append(self.bc_barcode_lbl.text())
         self.receipt_text.append(self.bc_name_lbl.text())
         if self.current_product.weigh_b:
-            self.receipt_quantity.append(Decimal(self.bc_weight_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+            self.receipt_quantity.append(float(Decimal(self.bc_weight_sbox.value()).quantize(self.cents, ROUND_HALF_UP)))
         else:
             self.receipt_quantity.append(self.bc_quantity_sbox.value())
         self.receipt_price.append(self.bc_price_lbl.text())
@@ -619,7 +835,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         for i in range(0, len(self.receipt_names)):
             prod = self.products_table.find_one(barcode=int(self.receipt_names[i]))
             if prod['weigh_b']:
-                new_quantity = Decimal(prod['available_units']).quantize(self.cents, ROUND_HALF_UP) - self.receipt_quantity[i]
+                new_quantity = Decimal(prod['available_units']).quantize(self.cents, ROUND_HALF_UP) - Decimal(self.receipt_quantity[i]).quantize(self.cents, ROUND_HALF_UP)
             else:
                 new_quantity = int(prod['available_units']) - self.receipt_quantity[i]
             self.products_table.update(dict(barcode=prod['barcode'], available_units=str(new_quantity)), ['barcode'])
@@ -629,9 +845,18 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.payment_dialog.exec_()
 
     def print_(self, method):
-        """ Print the contents of the ConsoleWidget to the specified QPrinter.
-        """
-        header = "Smith's Grocery\n\n123 ABC Lane\nLogan,UT 84321\n555-435-1234\n\n{}\nCashier: {}\nPayment Method: {}\n\n_______________________________\n".format(datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S"), self.employee_id_lbl.text(), method)
+        """ Print the contents of the ConsoleWidget to the specified QPrinter."""
+        self.receipt_other.append(datetime.datetime.now().strftime("%m%d%y%H%M%S"))
+        self.receipt_other.append(datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S"))
+        self.receipt_other.append(self.employee_id_lbl.text())
+        self.receipt_other.append(method)
+        self.receipt_other.append(str(Decimal(self.subtotal).quantize(self.cents, ROUND_HALF_UP)))
+        self.receipt_other.append(str(Decimal(self.tax).quantize(self.cents, ROUND_HALF_UP)))
+        self.receipt_other.append(str(Decimal(self.total).quantize(self.cents, ROUND_HALF_UP)))
+        self.receipt_date = datetime.datetime.now().strftime("%m/%d/%Y")
+        print(str(self.receipt_date))
+
+        header = "Smith's Grocery\n\n123 ABC Lane\nLogan,UT 84321\n555-435-1234\n\n{}\nCashier: {}\nPayment Method: {}\nReceipt ID: {}\n\n_______________________________\n".format(self.receipt_other[1], self.receipt_other[2], self.receipt_other[3], self.receipt_other[0])
         footer = "_______________________________\nSubtotal: {}\nTax: {}\n\nTotal: {}".format(self.bc_r_subtotal_lbl.text(), self.bc_tax_lbl.text(), self.bc_total_lbl.text())
         receipt = ""
         receipt += header
@@ -647,6 +872,11 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         dialog = QPrintDialog(printer)
         dialog.setModal(True)
         dialog.setWindowTitle("Print Receipt")
+        print("Names: " + str(self.receipt_names))
+        print("Prices: " + str(self.receipt_price))
+        print("Names: " + str(self.receipt_quantity))
+        print("Text: " + str(self.receipt_text))
+        print("Other: " + str(self.receipt_other))
 
         # dialog.addEnabledOption(QAbstractPrintDialog.PrintSelection)
         if dialog.exec_() == True:
@@ -654,7 +884,10 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 doc.print_(printer)
             except:
                 print("?")
+        self.receipts_table = self.db['receipts']
+        self.receipts_table.insert(dict(date=str(self.receipt_date), other=str(self.receipt_other), name=str(self.receipt_names), quantity=str(self.receipt_quantity), price=str(self.receipt_price), text=str(self.receipt_text), r_id=self.receipt_other[0]))
         self.update_inventory()
+        self.populate_mo_listview()
         self.cancel_transaction()
 
 app = QApplication([])

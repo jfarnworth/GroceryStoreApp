@@ -1,0 +1,2 @@
+cd "C:\Users\idont\Dropbox\F16 Classes\Software Engineering\Project Files\design files"
+"C:\Users\idont\AppData\Local\Programs\Python\Python35\Lib\site-packages\PyQt5\pyuic5.bat" -x payment.ui -o payment_ui.py
