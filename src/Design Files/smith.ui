@@ -472,7 +472,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Weight</string>
+        <string>Weigh&amp;t</string>
        </property>
       </widget>
       <widget class="QRadioButton" name="mp_quantity_rb">
