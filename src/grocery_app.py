@@ -1,5 +1,5 @@
 from ui import smith_ui, login_ui, payment_ui
-from classes import employee, product, receipt
+from Classes import employee, product, receipt
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -10,7 +10,9 @@ from decimal import Decimal, ROUND_HALF_UP
 
 import dataset
 import datetime
+import time
 import ast
+import table_model_class
 
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter, QPrintDialog
 
@@ -166,6 +168,11 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         #########################################
         # Report Initializing
         #########################################
+        self.initialize_reports_tab()
+
+        # Connections
+        self.r_date_edit_start.dateChanged.connect(self.r_date_changed)
+        self.r_date_edit_end.dateChanged.connect(self.r_date_changed)
 
         #########################################
         # Begin Checkout Initializing
@@ -540,8 +547,6 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         except:
             self.statusbar.showMessage("Search Error--Please enter a valid Receipt ID", 4000)
 
-
-
     def enable_mo_remove_btn(self):
         self.mo_btn_frame.setEnabled(True)
 
@@ -623,6 +628,101 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
     #########################################
     # Reports Functions
     #########################################
+    def initialize_reports_tab(self):
+        self.r_date_edit_start.setDateTime(QtCore.QDateTime.currentDateTime())
+        self.r_date_edit_end.setDateTime(QtCore.QDateTime.currentDateTime())
+
+        # self.report_table.horizontalHeader().setDefaultAlignment(Qt.AlignRight)
+        self.report_list = [["Apple", "250", "149.30"], ["Orange", "290", "245.48"], ["Grapes", "30 lbs", "130.45"], ["Peanut Butter", "223", "544.32"], ["Socks", "3", "1.45"]]
+        self.header = ["Product", "Total Sold", "Revenue", "", ""]
+        table_model = table_model_class.TableModel(self, self.report_list, self.header)
+        self.report_table.setModel(table_model)
+        self.model = self.report_table.model()
+
+        start_date = int(time.mktime(self.r_date_edit_start.date().toPyDate().timetuple()))
+        end_date = int(time.mktime(self.r_date_edit_end.date().toPyDate().timetuple())) + 86399
+
+        self.report_db_call(start_date, end_date)
+
+    def r_date_changed(self):
+        start_date = int(time.mktime(self.r_date_edit_start.date().toPyDate().timetuple()))
+        end_date = int(time.mktime(self.r_date_edit_end.date().toPyDate().timetuple())) + 86399
+
+        if start_date < end_date:
+            self.r_beg_lbl.setText("Beginning Date")
+            self.r_end_lbl.setText("Ending Date")
+            self.report_db_call(start_date, end_date)
+        else:
+            start_date = int(time.mktime(self.r_date_edit_end.date().toPyDate().timetuple()))
+            end_date = int(time.mktime(self.r_date_edit_start.date().toPyDate().timetuple())) + 86399
+            self.r_beg_lbl.setText("Ending Date")
+            self.r_end_lbl.setText("Beginning Date")
+            self.report_db_call(start_date, end_date)
+
+    def report_db_call(self, date_start, date_end):
+        self.rec_table = self.db['receipts'].all()
+
+        self.report_receipt_list = []
+
+        for rect in self.rec_table:
+            # print("Receipt time: " + str(rect['date_time']))
+            # print("Start time: " + str(date_start))
+            # print("End time: " + str(date_end))
+            # print("\n\n")
+            if rect['date_time'] >= date_start and rect['date_time'] <= date_end:
+                name = ast.literal_eval(rect['name'])
+                price = ast.literal_eval(rect['price'])
+                quantity = ast.literal_eval(rect['quantity'])
+                text = ast.literal_eval(rect['text'])
+                other = ast.literal_eval(rect['other'])
+
+                self.report_receipt_list.append(receipt.Receipt(rect['date'], name, price, quantity, text, other))
+
+        print(str(self.report_receipt_list))
+        self.calculate_totals()
+
+    def calculate_totals(self):
+        # Create master list
+        self.master_list = []
+        self.total_orders = 0
+        self.total_revenue = 0 # Decimal(0.00).quantize(self.cents, ROUND_HALF_UP)
+        self.first_time_b = True
+
+        # Read through receipts
+        for order in self.report_receipt_list:
+            # Read through items on the receipt
+            for i in range(0, len(order.names)):
+                self.total_orders += 1
+                # Check if product is in master list
+                if self.first_time_b:
+                    print("This is the first and only time")
+                    self.master_list.append([order.text[i], order.quantity[i], 1, "", ""])
+                    self.first_time_b = False
+                self.unique_b = True
+                for sublist in self.master_list:
+                    print(sublist[0] + ' ' + order.text[i])
+                    if sublist[0] == order.text[i]: # item exists in master_list
+                        print("It exists! I'm updating it.")
+                        # add to total and revenue
+                        sublist[1] += order.quantity[i]
+                        sublist[2] += 1 # (order.quantity[i] * order.price[i]).quantize(self.cents, ROUND_HALF_UP)
+                        self.total_revenue += 1
+                        self.unique_b = False
+                if self.unique_b: # The item hasn't been added to the master_list yet
+                    # add a new list to the master_list
+                    print("It doesn't exist! I'm adding it.")
+                    self.master_list.append([order.text[i], order.quantity[i], 1, "", ""]) # (order.quantity[i] * order.price[i]).quantize(self.cents, ROUND_HALF_UP)
+
+        # self.master_list.append(["", "", "", "Total Orders", self.total_orders])
+        # self.master_list.append(["", "", "", "Total Revenue", self.total_revenue])
+        self.r_total_orders_lbl.setText(self.total_orders)
+        self.r_total_orders_lbl.setText('$' + self.total_revenue)
+        # Keep running total of receipts and Total Revenue
+        print(str(self.master_list))
+        table_model = table_model_class.TableModel(self, self.master_list, self.header)
+        self.report_table.setModel(table_model)
+        self.model = self.report_table.model()
+
 
     #########################################
     # Begin Checkout Functions
@@ -854,6 +954,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.receipt_other.append(str(Decimal(self.tax).quantize(self.cents, ROUND_HALF_UP)))
         self.receipt_other.append(str(Decimal(self.total).quantize(self.cents, ROUND_HALF_UP)))
         self.receipt_date = datetime.datetime.now().strftime("%m/%d/%Y")
+        self.receipt_date_time = int(datetime.datetime.now().timestamp())
         print(str(self.receipt_date))
 
         header = "Smith's Grocery\n\n123 ABC Lane\nLogan,UT 84321\n555-435-1234\n\n{}\nCashier: {}\nPayment Method: {}\nReceipt ID: {}\n\n_______________________________\n".format(self.receipt_other[1], self.receipt_other[2], self.receipt_other[3], self.receipt_other[0])
@@ -885,7 +986,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             except:
                 print("?")
         self.receipts_table = self.db['receipts']
-        self.receipts_table.insert(dict(date=str(self.receipt_date), other=str(self.receipt_other), name=str(self.receipt_names), quantity=str(self.receipt_quantity), price=str(self.receipt_price), text=str(self.receipt_text), r_id=self.receipt_other[0]))
+        self.receipts_table.insert(dict(date=str(self.receipt_date), other=str(self.receipt_other), name=str(self.receipt_names), quantity=str(self.receipt_quantity), price=str(self.receipt_price), text=str(self.receipt_text), r_id=self.receipt_other[0], date_time=self.receipt_date_time))
         self.update_inventory()
         self.populate_mo_listview()
         self.cancel_transaction()

@@ -963,7 +963,7 @@
      <attribute name="title">
       <string>Reports</string>
      </attribute>
-     <widget class="QDateEdit" name="mo_date_edit_2">
+     <widget class="QDateEdit" name="r_date_edit_start">
       <property name="geometry">
        <rect>
         <x>790</x>
@@ -982,7 +982,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QDateEdit" name="mo_date_edit_3">
+     <widget class="QDateEdit" name="r_date_edit_end">
       <property name="geometry">
        <rect>
         <x>942</x>
@@ -990,6 +990,13 @@
         <width>110</width>
         <height>22</height>
        </rect>
+      </property>
+      <property name="time">
+       <time>
+        <hour>23</hour>
+        <minute>59</minute>
+        <second>59</second>
+       </time>
       </property>
       <property name="currentSection">
        <enum>QDateTimeEdit::MonthSection</enum>
@@ -1001,7 +1008,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QLabel" name="label_2">
+     <widget class="QLabel" name="r_beg_lbl">
       <property name="geometry">
        <rect>
         <x>790</x>
@@ -1014,7 +1021,7 @@
        <string>Beginning Date</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_3">
+     <widget class="QLabel" name="r_end_lbl">
       <property name="geometry">
        <rect>
         <x>942</x>
@@ -1027,7 +1034,7 @@
        <string>Ending Date</string>
       </property>
      </widget>
-     <widget class="QTableView" name="tableView">
+     <widget class="QTableView" name="report_table">
       <property name="geometry">
        <rect>
         <x>30</x>
@@ -1036,8 +1043,26 @@
         <height>555</height>
        </rect>
       </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <property name="tabKeyNavigation">
+       <bool>false</bool>
+      </property>
+      <property name="showDropIndicator" stdset="0">
+       <bool>false</bool>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::NoSelection</enum>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
      </widget>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="r_print_btn">
       <property name="geometry">
        <rect>
         <x>980</x>
