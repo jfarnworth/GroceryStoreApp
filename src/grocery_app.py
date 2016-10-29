@@ -13,6 +13,7 @@ import dataset
 import datetime
 import ast
 import os
+import xlrd
 
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter, QPrintDialog
 
@@ -378,7 +379,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                                                   self.mp_quantity_rb.isChecked(), self.mp_provider_field.text())
 
     def handle_update_product(self):
-        """Updates employee info"""
+        """Updates product info"""
         if self.mp_name_field.text() != "" and self.mp_barcode_field.text() != "" and self.mp_available_units_field.text() != "" and self.mp_price_field.text() != "" and self.mp_customer_price_field.text() != "" and self.mp_provider_field.text() != "":
             if self.mp_new_product_b:
                 self.products_table = self.db['products']
@@ -416,7 +417,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     self.statusbar.showMessage("Error--" + self.mp_name_field.text() + "\'s information not updated", 4000)
 
     def handle_delete_product(self):
-        """Delete employee from database"""
+        """Delete product from database"""
         # TODO: confirmation dialog
         self.products_table = self.db['products']
         try:
@@ -442,7 +443,30 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         spreadsheet_root.withdraw()
         file_name = tkinter.filedialog.askopenfilename()
         if file_name != "":
-            open(file_name, mode='r')
+            mp_sheet = xlrd.open_workbook(file_name).sheet_by_index(0)
+            self.products_table = self.db['products']
+            for i in range(mp_sheet.nrows):
+                input_name = mp_sheet.cell_value(i, 0)
+                input_price = mp_sheet.cell_value(i, 1)
+                input_consumer_price = mp_sheet.cell_value(i, 2)
+                input_weight = mp_sheet.cell_value(i, 3)
+                input_provider = mp_sheet.cell_value(i, 4)
+                input_available_units = mp_sheet.cell_value(i, 5)
+                if self.products_table.find_one(name=input_name):
+                    self.products_table.update(dict(name=input_name,
+                         available_units=input_available_units,
+                         price=input_price,
+                         customer_price=input_consumer_price,
+                         weigh_b=input_weight, provider=input_provider), ['barcode'])
+                else:
+                    self.products_table.insert(
+                        dict(name=input_name,
+                             available_units=input_available_units,
+                            price=input_price,
+                            customer_price=input_consumer_price,
+                            weigh_b=input_weight, provider=input_provider), ['barcode'])
+
+
     #########################################
     # Manage Orders Functions
     #########################################
