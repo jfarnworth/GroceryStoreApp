@@ -151,7 +151,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_add_btn.clicked.connect(self.handle_add_new_product)
         self.mp_delete_btn.clicked.connect(self.handle_delete_product)
         self.mp_update_btn.clicked.connect(self.handle_update_product)
-        self.mp_import_btn.clicked.connect(self.handle_import_spreadsheet_btn)
+        self.mp_import_btn.clicked.connect(self.handle_import_spreadsheet)
 
         #########################################
         # Manage Order Initializing
@@ -436,7 +436,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_delete_btn.setEnabled(False)
         self.mp_update_btn.setEnabled(False)
 
-    def handle_import_spreadsheet_btn(self):
+    def handle_import_spreadsheet(self):
         file_options = {}
         file_options['filetypes'] = ('Excel Spreadsheet', '.xls')
         spreadsheet_root = tkinter.Tk()
