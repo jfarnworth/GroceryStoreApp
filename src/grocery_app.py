@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, QSplashSc
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 
+import tkinter, tkinter.filedialog
 import dataset
 import datetime
 import ast
@@ -149,6 +150,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_add_btn.clicked.connect(self.handle_add_new_product)
         self.mp_delete_btn.clicked.connect(self.handle_delete_product)
         self.mp_update_btn.clicked.connect(self.handle_update_product)
+        self.mp_import_btn.clicked.connect(self.handle_import_spreadsheet_btn)
 
         #########################################
         # Manage Order Initializing
@@ -360,6 +362,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         """Clears product fields so new info can be added"""
         self.mp_new_product_b = True
         self.mp_product_gbox.setEnabled(True)
+        self.mp_import_btn.setEnabled(True)
         self.mp_delete_btn.setEnabled(True)
         self.mp_update_btn.setEnabled(True)
         self.mp_name_field.setText("")
@@ -433,10 +436,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_update_btn.setEnabled(False)
 
     def handle_import_spreadsheet_btn(self):
-        if sys.platform == 'win32':
-            os.startfile()
-        else:
-            subprocess.Popen(['xdg-open'])
+        file_options = {}
+        file_options['filetypes'] = ('Excel Spreadsheet', '.xls')
+        spreadsheet_root = tkinter.Tk()
+        spreadsheet_root.withdraw()
+        file_name = tkinter.filedialog.askopenfilename()
+        if file_name != "":
+            open(file_name, mode='r')
     #########################################
     # Manage Orders Functions
     #########################################
