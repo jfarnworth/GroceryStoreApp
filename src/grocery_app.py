@@ -13,12 +13,12 @@ import dataset
 import datetime
 import time
 import ast
-<<<<<<< HEAD
+#<<<<<<< HEAD
 import table_model_class
-=======
+#=======
 import os
 import xlrd
->>>>>>> origin/master
+#>>>>>>> origin/master
 
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter, QPrintDialog
 
@@ -446,8 +446,8 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_delete_btn.setEnabled(False)
         self.mp_update_btn.setEnabled(False)
 
-<<<<<<< HEAD
-=======
+#<<<<<<< HEAD
+#=======
     def handle_import_spreadsheet(self):
         file_options = {}
         file_options['filetypes'] = ('Excel Spreadsheet', '.xls')
@@ -479,7 +479,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                             weigh_b=input_weight, provider=input_provider), ['barcode'])
 
 
->>>>>>> origin/master
+# >>>>>>> origin/master
     #########################################
     # Manage Orders Functions
     #########################################
