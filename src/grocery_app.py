@@ -100,6 +100,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.int_validator = QtGui.QIntValidator()
 
         self.setWindowIcon(QtGui.QIcon('SmithsLogo.png'))
+        self.cents = Decimal('.01')
 
         # connecting to a SQLite database
         self.db = dataset.connect('sqlite:///smith.db')
@@ -173,6 +174,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         # Connections
         self.r_date_edit_start.dateChanged.connect(self.r_date_changed)
         self.r_date_edit_end.dateChanged.connect(self.r_date_changed)
+        self.r_print_btn.clicked.connect(self.handle_print_btn)
 
         #########################################
         # Begin Checkout Initializing
@@ -183,7 +185,6 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.receipt_quantity = []
         self.receipt_price = []
         self.receipt_other = []
-        self.cents = Decimal('.01')
         self.tax_rate = Decimal(.047)
         self.subtotal = Decimal(0.0)
         self.tax = Decimal(0.0)
@@ -241,7 +242,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
             self.populate_me_employee_list_view()
 
-            self.tabWidget.setCurrentIndex(0)
+            self.tabWidget.setCurrentIndex(3) #TODO Return to 0
         elif self.current_employee.role == 1:
             self.tabWidget.insertTab(0, self.begin_checkout_tab, "Begin Checkout")
             self.tabWidget.insertTab(0, self.manage_orders_tab, "Manage Orders")
@@ -250,7 +251,6 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
     #########################################
     # Manage Employee Functions
     #########################################
-
     def populate_me_employee_list_view(self):
         """Read employee list into Manage Employees List View"""
         self.me_employee_list_model = QStandardItemModel(self.me_employee_listview)
@@ -442,11 +442,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
     # Manage Orders Functions
     #########################################
     def initialize_manage_orders_tab(self):
+        """comment"""
         self.mo_date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
         self.mo_date_lbl.setText(str(self.mo_date_edit.date().toString("MMMM dd, yyyy")))
         print("Manage Order init")
 
     def populate_mo_listview(self):
+        """comment"""
         self.receipt_list = []
         self.mo_date_lbl.setText(str(self.mo_date_edit.date().toString("MMMM dd, yyyy")))
         self.receipt_call = self.receipts_table.find(date=self.mo_date_edit.date().toString("M/dd/yyyy"))
@@ -469,6 +471,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mo_receipt_date_listview.setModel(self.mo_receipt_date_list_model)
 
     def load_receipt(self):
+        """comment"""
         # self.current_receipt = None
         self.mo_receipt_frame.setEnabled(True)
         self.current_receipt = self.receipt_list[self.mo_receipt_date_listview.selectedIndexes()[0].row()]
@@ -503,6 +506,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         # TODO
 
     def load_receipt_from_search(self):
+        """comment"""
         self.receipts_table = self.db['receipts']
         try:
             rpt = self.receipts_table.find_one(r_id=int(self.mo_id_search_field.text()))
@@ -601,6 +605,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.statusbar.showMessage("Index Error--Please select an item", 4000)
 
     def mo_update_inventory(self, row):
+        """comment"""
         try:
             # print("Row #:" + str(row))
             # print("Why are you not working?")
@@ -629,12 +634,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
     # Reports Functions
     #########################################
     def initialize_reports_tab(self):
+        """comment"""
         self.r_date_edit_start.setDateTime(QtCore.QDateTime.currentDateTime())
         self.r_date_edit_end.setDateTime(QtCore.QDateTime.currentDateTime())
 
         # self.report_table.horizontalHeader().setDefaultAlignment(Qt.AlignRight)
         self.report_list = [["Apple", "250", "149.30"], ["Orange", "290", "245.48"], ["Grapes", "30 lbs", "130.45"], ["Peanut Butter", "223", "544.32"], ["Socks", "3", "1.45"]]
-        self.header = ["Product", "Total Sold", "Revenue", "", ""]
+        self.header = ["Product", "Total Sold", "Revenue"]
         table_model = table_model_class.TableModel(self, self.report_list, self.header)
         self.report_table.setModel(table_model)
         self.model = self.report_table.model()
@@ -645,6 +651,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.report_db_call(start_date, end_date)
 
     def r_date_changed(self):
+        """comment"""
         start_date = int(time.mktime(self.r_date_edit_start.date().toPyDate().timetuple()))
         end_date = int(time.mktime(self.r_date_edit_end.date().toPyDate().timetuple())) + 86399
 
@@ -660,6 +667,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.report_db_call(start_date, end_date)
 
     def report_db_call(self, date_start, date_end):
+        """comment"""
         self.rec_table = self.db['receipts'].all()
 
         self.report_receipt_list = []
@@ -682,46 +690,114 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.calculate_totals()
 
     def calculate_totals(self):
+        """comment"""
         # Create master list
-        self.master_list = []
-        self.total_orders = 0
-        self.total_revenue = 0 # Decimal(0.00).quantize(self.cents, ROUND_HALF_UP)
-        self.first_time_b = True
+        try:
+            self.master_list = []
+            self.total_orders = 0
+            self.total_revenue = Decimal(0.00).quantize(self.cents, ROUND_HALF_UP)
+            self.first_time_b = True
 
-        # Read through receipts
-        for order in self.report_receipt_list:
-            # Read through items on the receipt
-            for i in range(0, len(order.names)):
+            # Read through receipts
+            for order in self.report_receipt_list:
+                # Read through items on the receipt
                 self.total_orders += 1
-                # Check if product is in master list
-                if self.first_time_b:
-                    print("This is the first and only time")
-                    self.master_list.append([order.text[i], order.quantity[i], 1, "", ""])
-                    self.first_time_b = False
-                self.unique_b = True
-                for sublist in self.master_list:
-                    print(sublist[0] + ' ' + order.text[i])
-                    if sublist[0] == order.text[i]: # item exists in master_list
-                        print("It exists! I'm updating it.")
-                        # add to total and revenue
-                        sublist[1] += order.quantity[i]
-                        sublist[2] += 1 # (order.quantity[i] * order.price[i]).quantize(self.cents, ROUND_HALF_UP)
-                        self.total_revenue += 1
-                        self.unique_b = False
-                if self.unique_b: # The item hasn't been added to the master_list yet
-                    # add a new list to the master_list
-                    print("It doesn't exist! I'm adding it.")
-                    self.master_list.append([order.text[i], order.quantity[i], 1, "", ""]) # (order.quantity[i] * order.price[i]).quantize(self.cents, ROUND_HALF_UP)
+                for i in range(0, len(order.names)):
+                    # Check if product is in master list
+                    if self.first_time_b:
+                        print("This is the first and only time")
+                        self.master_list.append(["", "", ""])
+                        self.first_time_b = False
+                    self.unique_b = True
+                    for sublist in self.master_list:
+                        print(sublist[0] + ' ' + order.text[i])
+                        if sublist[0] == order.text[i]: # item exists in master_list
+                            print("It exists! I'm updating it.")
+                            # add to total and revenue
+                            sublist[1] += order.quantity[i]
+                            if isinstance(order.quantity[i], int):
+                                sublist[2] += Decimal(int(order.quantity[i]) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP) # TODO
+                                self.total_revenue += Decimal(int(order.quantity[i]) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP)
+                            else:
+                                sublist[2] += Decimal(Decimal(order.quantity[i]).quantize(self.cents, ROUND_HALF_UP) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP)
+                                self.total_revenue += Decimal(Decimal(order.quantity[i]).quantize(self.cents, ROUND_HALF_UP) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP)
 
-        # self.master_list.append(["", "", "", "Total Orders", self.total_orders])
-        # self.master_list.append(["", "", "", "Total Revenue", self.total_revenue])
-        self.r_total_orders_lbl.setText(self.total_orders)
-        self.r_total_orders_lbl.setText('$' + self.total_revenue)
-        # Keep running total of receipts and Total Revenue
-        print(str(self.master_list))
-        table_model = table_model_class.TableModel(self, self.master_list, self.header)
-        self.report_table.setModel(table_model)
-        self.model = self.report_table.model()
+                            self.unique_b = False
+                    if self.unique_b: # The item hasn't been added to the master_list yet
+                        # add a new list to the master_list
+                        print("It doesn't exist! I'm adding it.")
+                        if isinstance(order.quantity[i], int):
+                            rev = Decimal(int(order.quantity[i]) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP)
+                            self.master_list.append([order.text[i], order.quantity[i], rev])
+                            self.total_revenue += rev
+                        else:
+                            rev = Decimal(Decimal(order.quantity[i]).quantize(self.cents, ROUND_HALF_UP) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP)
+                            self.master_list.append([order.text[i], order.quantity[i], rev])
+                            self.total_revenue += rev
+
+
+            # self.master_list.append(["", "", "", "Total Orders", self.total_orders])
+            # self.master_list.append(["", "", "", "Total Revenue", self.total_revenue])
+            self.r_total_orders_lbl.setText(str(self.total_orders))
+            self.r_total_revenue_lbl.setText('$' + str(self.total_revenue))
+            # Keep running total of receipts and Total Revenue
+            if len(self.master_list) > 0:
+                self.master_list.pop(0)
+            for subl in self.master_list:
+                subl[2] = "$" + str(subl[2])
+            print(str(self.master_list))
+            table_model = table_model_class.TableModel(self, self.master_list, self.header)
+            self.report_table.setModel(table_model)
+            self.model = self.report_table.model()
+        except:
+            self.statusbar.showMessage("Report Error", 4000)
+
+    def handle_print_btn(self):
+        """comment"""
+        report = u""
+        if not self.master_list == []:
+            if self.r_alpha_rb.isChecked():
+                self.master_list.sort(key=lambda row: row[0])
+            elif self.r_total_rb.isChecked():
+                self.master_list.sort(key=lambda row: row[1])
+            elif self.r_revenue_rb.isChecked():
+                for item in self.master_list:
+                    item[2] = item[2].replace("$", "")
+                self.master_list.sort(key=lambda row: float(row[2]))
+                for item in self.master_list:
+                    item[2] = '$' + str(item[2])
+
+            if self.r_desc_rb.isChecked():
+                self.master_list = self.master_list[::-1]
+
+            if self.r_beg_lbl.text() == "Beginning Date":
+                report += "Report " + self.r_date_edit_start.date().toString("MM/dd/yyyy") + ' - ' +  self.r_date_edit_end.date().toString("MM/dd/yyyy") + '\n\n'
+            else:
+                report += "Report " + self.r_date_edit_end.date().toString("MM/dd/yyyy") + ' - ' + self.r_date_edit_start.date().toString("MM/dd/yyyy") + '\n\n'
+            # report += "{:>30} {:>30} {:>30}\n".format(str(self.header[0]), str(self.header[1]), str(self.header[2]))
+            # report += "{:>34} {:>30} {:>33}\n".format("-----------", "-------------", "------------")
+            for sublist in self.master_list:
+                # report+=str(sublist[0]) + ((10 - len(str(sublist[0]))) * '*') + str(sublist[1]) + ((6 - len(str(sublist[1]))) * '*') + str(sublist[2]) +"\n"
+                if isinstance(sublist[1], int):
+                    report += "{}\n{}\n{}\n\n".format(str(sublist[0]), str(sublist[1]), str(sublist[2]))
+                else:
+                    report += "{}\n{} lbs\n{}\n\n".format(str(sublist[0]), str(sublist[1]), str(sublist[2]))
+            report += "\nTotal Orders: " + str(self.total_orders) + "\nTotal Revenue: $" + str(self.total_revenue)
+            print(report)
+            printer = QPrinter()
+            doc = QTextDocument(report)
+            dialog = QPrintDialog(printer)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Print Report")
+
+            # dialog.addEnabledOption(QAbstractPrintDialog.PrintSelection)
+            if dialog.exec_() == True:
+                try:
+                    doc.print_(printer)
+                except:
+                    print("?")
+        else:
+            self.statusbar.showMessage("Empty report. Please select dates with at least one order.", 4000)
 
 
     #########################################
