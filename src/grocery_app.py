@@ -249,7 +249,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
             self.populate_me_employee_list_view()
 
-            self.tabWidget.setCurrentIndex(3) #TODO Return to 0
+            self.tabWidget.setCurrentIndex(0)
         elif self.current_employee.role == 1:
             self.tabWidget.insertTab(0, self.begin_checkout_tab, "Begin Checkout")
             self.tabWidget.insertTab(0, self.manage_orders_tab, "Manage Orders")

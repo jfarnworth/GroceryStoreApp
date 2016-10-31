@@ -34,7 +34,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="manage_employees_tab">
      <attribute name="title">
@@ -516,6 +516,19 @@
       </property>
       <property name="text">
        <string>Add a New Product</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="mp_import_btn">
+      <property name="geometry">
+       <rect>
+        <x>886</x>
+        <y>610</y>
+        <width>183</width>
+        <height>35</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Import from Excel</string>
       </property>
      </widget>
     </widget>
