@@ -1,0 +1,1 @@
+%2F%2F Cool Class Diagram, [MainWindow]<>1-*[Product], [MainWindow]<>1--*[Ui_MainWindow], [MainWindow]<>1-*[Employee], [PaymentDialog]<>1-*[Ui_paymentDialog],[LoginDialog]<>1-*[Ui_loginDialog]
