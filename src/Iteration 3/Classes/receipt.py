@@ -1,10 +1,11 @@
 class Receipt:
-    def __init__(self, date, names, price, quantity, text, other):
+    def __init__(self, date, names, price, quantity, text, other, custID = None):
         self.date = date
         self.names = names
         self.price = price
         self.quantity = quantity
         self.text = text
         self.other = other
+        self.customer_id = custID
 
 

@@ -34,7 +34,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="manage_employees_tab">
      <attribute name="title">
@@ -290,16 +290,6 @@
         <string>Delete Product</string>
        </property>
       </widget>
-      <widget class="QLineEdit" name="mp_provider_field">
-       <property name="geometry">
-        <rect>
-         <x>107</x>
-         <y>252</y>
-         <width>161</width>
-         <height>20</height>
-        </rect>
-       </property>
-      </widget>
       <widget class="QLineEdit" name="mp_name_field">
        <property name="geometry">
         <rect>
@@ -355,19 +345,6 @@
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
-      <widget class="QLineEdit" name="mp_available_units_field">
-       <property name="geometry">
-        <rect>
-         <x>107</x>
-         <y>90</y>
-         <width>161</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="inputMask">
-        <string/>
-       </property>
-      </widget>
       <widget class="QLabel" name="label_13">
        <property name="geometry">
         <rect>
@@ -384,16 +361,6 @@
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
-      <widget class="QLineEdit" name="mp_price_field">
-       <property name="geometry">
-        <rect>
-         <x>107</x>
-         <y>126</y>
-         <width>161</width>
-         <height>20</height>
-        </rect>
-       </property>
-      </widget>
       <widget class="QLabel" name="label_12">
        <property name="geometry">
         <rect>
@@ -408,26 +375,6 @@
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="mp_customer_price_field">
-       <property name="geometry">
-        <rect>
-         <x>107</x>
-         <y>158</y>
-         <width>161</width>
-         <height>20</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="mp_barcode_field">
-       <property name="geometry">
-        <rect>
-         <x>107</x>
-         <y>56</y>
-         <width>161</width>
-         <height>20</height>
-        </rect>
        </property>
       </widget>
       <widget class="QLabel" name="label_11">
@@ -504,6 +451,202 @@
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
+      <widget class="QSpinBox" name="mp_provider_sbox">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>252</y>
+         <width>78</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="suffix">
+        <string/>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QDoubleSpinBox" name="mp_customer_price_sbox">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>158</y>
+         <width>78</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="prefix">
+        <string>$ </string>
+       </property>
+       <property name="maximum">
+        <double>99999.990000000005239</double>
+       </property>
+       <property name="value">
+        <double>0.000000000000000</double>
+       </property>
+      </widget>
+      <widget class="QDoubleSpinBox" name="mp_price_sbox">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>126</y>
+         <width>78</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="prefix">
+        <string>$ </string>
+       </property>
+       <property name="maximum">
+        <double>99999.990000000005239</double>
+       </property>
+       <property name="value">
+        <double>0.000000000000000</double>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="mp_available_units_sbox">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>90</y>
+         <width>57</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="suffix">
+        <string/>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="mp_barcode_sbox">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>56</y>
+         <width>78</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="suffix">
+        <string/>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QDoubleSpinBox" name="mp_available_units_2_sbox">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>90</y>
+         <width>65</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="prefix">
+        <string> </string>
+       </property>
+       <property name="suffix">
+        <string> lbs</string>
+       </property>
+       <property name="maximum">
+        <double>0.990000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.010000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.000000000000000</double>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="white_space">
+       <property name="geometry">
+        <rect>
+         <x>172</x>
+         <y>92</y>
+         <width>10</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: white;
+	border: none;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
      </widget>
      <widget class="QPushButton" name="mp_add_btn">
       <property name="geometry">
@@ -529,6 +672,364 @@
       </property>
       <property name="text">
        <string>Import from Excel</string>
+      </property>
+     </widget>
+     <zorder>label_33</zorder>
+     <zorder>mp_barcode_search_field</zorder>
+     <zorder>mp_search_btn</zorder>
+     <zorder>mp_product_gbox</zorder>
+     <zorder>mp_add_btn</zorder>
+     <zorder>mp_import_btn</zorder>
+     <zorder>mp_customer_price_sbox</zorder>
+     <zorder>mp_price_sbox</zorder>
+    </widget>
+    <widget class="QWidget" name="manage_customers_tab">
+     <attribute name="title">
+      <string>Manage Customers</string>
+     </attribute>
+     <widget class="QGroupBox" name="groupBox_5">
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>266</y>
+        <width>535</width>
+        <height>155</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Point Conversion Management</string>
+      </property>
+      <widget class="QLabel" name="label_24">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>26</y>
+         <width>89</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Customers earn:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_26">
+       <property name="geometry">
+        <rect>
+         <x>282</x>
+         <y>26</y>
+         <width>237</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>for every $1 spent</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_27">
+       <property name="geometry">
+        <rect>
+         <x>282</x>
+         <y>58</y>
+         <width>297</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>are equivalent to $1.00</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_31">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>58</y>
+         <width>167</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>When buying products with points:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="earn_sbox">
+       <property name="geometry">
+        <rect>
+         <x>196</x>
+         <y>24</y>
+         <width>79</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="suffix">
+        <string> pt(s)</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>9999</number>
+       </property>
+       <property name="value">
+        <number>1</number>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="spend_sbox">
+       <property name="geometry">
+        <rect>
+         <x>196</x>
+         <y>56</y>
+         <width>79</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="suffix">
+        <string> pt(s)</string>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>9999</number>
+       </property>
+       <property name="value">
+        <number>100</number>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="mc_update_rules_btn">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>98</y>
+         <width>183</width>
+         <height>35</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Update Point Rules</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QLabel" name="label_38">
+      <property name="geometry">
+       <rect>
+        <x>6</x>
+        <y>46</y>
+        <width>145</width>
+        <height>13</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Customer Name/ID Search</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="mc_search_btn">
+      <property name="geometry">
+       <rect>
+        <x>114</x>
+        <y>79</y>
+        <width>183</width>
+        <height>35</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Search</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="mc_name_id_search_field">
+      <property name="geometry">
+       <rect>
+        <x>158</x>
+        <y>42</y>
+        <width>161</width>
+        <height>20</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="mc_customer_gbox">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>22</y>
+        <width>535</width>
+        <height>219</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Customer Information</string>
+      </property>
+      <widget class="QLineEdit" name="mc_name_field">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>24</y>
+         <width>161</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="mc_update_btn">
+       <property name="geometry">
+        <rect>
+         <x>184</x>
+         <y>148</y>
+         <width>183</width>
+         <height>35</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Update Customer Info</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_39">
+       <property name="geometry">
+        <rect>
+         <x>11</x>
+         <y>94</y>
+         <width>89</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Point Balance</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_44">
+       <property name="geometry">
+        <rect>
+         <x>11</x>
+         <y>28</y>
+         <width>89</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Customer Name</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_45">
+       <property name="geometry">
+        <rect>
+         <x>11</x>
+         <y>60</y>
+         <width>89</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Customer ID</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="mc_id_lbl">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>60</y>
+         <width>89</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="mc_point_balance_sbox">
+       <property name="geometry">
+        <rect>
+         <x>107</x>
+         <y>89</y>
+         <width>125</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+       <property name="suffix">
+        <string> pt(s)</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>9999</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="mc_activity_cb">
+       <property name="geometry">
+        <rect>
+         <x>346</x>
+         <y>82</y>
+         <width>133</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Active Customer</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QPushButton" name="mc_add_btn">
+      <property name="geometry">
+       <rect>
+        <x>704</x>
+        <y>50</y>
+        <width>183</width>
+        <height>35</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Add a New Customer</string>
       </property>
      </widget>
     </widget>
@@ -1896,6 +2397,98 @@
        <zorder>bc_remove_btn</zorder>
        <zorder>bc_search_frame</zorder>
       </widget>
+      <widget class="QPushButton" name="bc_load_reservation_btn">
+       <property name="geometry">
+        <rect>
+         <x>914</x>
+         <y>114</y>
+         <width>141</width>
+         <height>35</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Load Reservation(s)</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="bc_customer_name_field">
+       <property name="geometry">
+        <rect>
+         <x>914</x>
+         <y>26</y>
+         <width>141</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="placeholderText">
+        <string/>
+       </property>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="bc_reservation_num_sbox">
+       <property name="geometry">
+        <rect>
+         <x>914</x>
+         <y>74</y>
+         <width>141</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="wrapping">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="suffix">
+        <string/>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_2">
+       <property name="geometry">
+        <rect>
+         <x>914</x>
+         <y>56</y>
+         <width>141</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Reservation Number</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_28">
+       <property name="geometry">
+        <rect>
+         <x>914</x>
+         <y>8</y>
+         <width>141</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Customer Name or ID</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+      </widget>
      </widget>
      <zorder>bc_checkout_frame</zorder>
      <zorder>bc_begin_checkout_btn</zorder>
@@ -1983,13 +2576,8 @@
   <tabstop>mp_barcode_search_field</tabstop>
   <tabstop>mp_search_btn</tabstop>
   <tabstop>mp_name_field</tabstop>
-  <tabstop>mp_barcode_field</tabstop>
-  <tabstop>mp_available_units_field</tabstop>
-  <tabstop>mp_price_field</tabstop>
-  <tabstop>mp_customer_price_field</tabstop>
   <tabstop>mp_quantity_rb</tabstop>
   <tabstop>mp_weight_rb</tabstop>
-  <tabstop>mp_provider_field</tabstop>
   <tabstop>mp_update_btn</tabstop>
   <tabstop>mp_add_btn</tabstop>
   <tabstop>mp_delete_btn</tabstop>

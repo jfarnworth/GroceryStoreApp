@@ -1,5 +1,5 @@
 from ui import smith_ui, login_ui, payment_ui
-from Classes import employee, product, receipt, customer
+from Classes import employee, product, receipt, customer, reservation
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, QSplashScreen, QProgressBar, QDialog
 import sys
 from decimal import Decimal, ROUND_HALF_UP
-import caution_dialog
+import caution_dialog, payment_dialog
 
 import tkinter, tkinter.filedialog
 import dataset
@@ -40,52 +40,10 @@ def my_exception_hook(exctype, value, traceback):
 # Set the exception hook to our wrapping function
 sys.excepthook = my_exception_hook
 
-class PaymentDialog(QtWidgets.QDialog, payment_ui.Ui_payment_dialog):
-    def __init__(self, parent):
-        QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
-        self.main_window = parent
-        # self.current_customer = main_window.bc_current_customer
-        self.error_lbl.setText("")
-        self.cash_rb.setChecked(True)
-        self.total_lbl.setText(self.main_window.bc_total_lbl.text())
-        if self.current_customer is not None:
-            self.set_text(self.current_customer.customer_name, self.current_customer.customer_id, self.current_customer.customer_balance)
-            if True: # customer has enough points to purchase
-                self.points_rb.setEnabled(True)
-                self.pay_with_points_lbl.setHidden(False)
-                self.pay_with_points_lbl.setText("")
-            else:
-                self.points_rb.setEnabled(False)
-                self.pay_with_points_lbl.setText("Not Enough Points")
-        else:
-            self.points_rb.setEnabled(False)
-            self.pay_with_points_lbl.setHidden(True)
-
-
-        # Connections
-        self.print_btn.clicked.connect(self.handle_print_btn)
-        #self.load_customer_info_btn.clicked.connect(self.)
-        #self.new_customer_cb.toggled.connect(self.)
-
-    def handle_print_btn(self):
-        if self.cash_rb.isChecked():
-            self.main_window.print_("Cash")
-        elif self.credit_rb.isChecked():
-            self.main_window.print_("Credit Card")
-        elif self.check_rb.isChecked():
-            self.main_window.print_("Check")
-        self.close()
-
-    def set_text(self, name, id, balance):
-        self.customer_name_lbl.setText(name)
-        self.customer_id_lbl.setText(id)
-        self.available_points_lbl.setText(balance)
-
 
 class LoginDialog(QtWidgets.QDialog, login_ui.Ui_login_dialog):
     def __init__(self, parent):
-        QtWidgets.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent, Qt.WindowStaysOnTopHint)
         self.setupUi(self)
         self.main_window = parent
         self.error_lbl.setText("")
@@ -174,6 +132,8 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.temporary_product_list = []
         self.temporary_product_list.append(product.Product("Apple", 1, 100, .25, 1.51, False, 0))
         self.temporary_product_list.append(product.Product("Orange", 2, 100, .35, 1.92, False, 0))
+        self.mp_available_units_2_sbox.setHidden(True)
+        self.white_space.setHidden(True)
         self.current_product = None
         self.mp_new_product_b = False
         self.mp_barcode_search_field.setValidator(self.int_validator)
@@ -191,6 +151,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_delete_btn.clicked.connect(self.handle_delete_product)
         self.mp_update_btn.clicked.connect(self.handle_update_product)
         self.mp_import_btn.clicked.connect(self.handle_import_spreadsheet)
+        self.mp_weight_rb.toggled.connect(self.toggle_tens)
 
         ######################################### TODO
         # Manage Customers Initializing # TODO
@@ -234,6 +195,16 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.r_print_btn.clicked.connect(self.handle_print_btn)
 
         #########################################
+        # Reservations Initializing
+        #########################################
+        self.reservations_table = self.db['reservations']
+        try:
+            date = str(datetime.datetime.now().strftime("%m/%d/%Y"))
+            self.reservations_table.insert(dict(id=0, customer_id=1, r_date=date, barcodes=str([1,2,3]), quantities=str([1,2,3.22])))
+        except:
+            print("Reservations table exists")
+
+        #########################################
         # Begin Checkout Initializing
         #########################################
         self.reset_checkout()
@@ -248,6 +219,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.total = Decimal(0.0)
         self.bc_barcode_search_field.setValidator(self.int_validator)
         self.bc_begin_checkout_btn.setFocus()
+        self.bc_current_customer = None
 
         # Connections
         self.bc_begin_checkout_btn.clicked.connect(self.begin_checkout)
@@ -260,7 +232,12 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.bc_get_payment_btn.clicked.connect(self.launch_payment_dialog)
         self.bc_receipt_listview.clicked.connect(self.enable_remove_btn)
         self.bc_cancel_btn.clicked.connect(self.cancel_transaction)
+        self.bc_load_reservation_btn.clicked.connect(self.handle_load_reservation_btn)
         # self.bc_weight_sbox.returnPressed.connect(self.handle_add_item)
+
+##############################################################################################################################################################################################
+#   Functions
+##############################################################################################################################################################################################
 
     def launch_login_dialog(self):
         self.tabWidget.clear()
@@ -413,8 +390,6 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.me_create_new_employee_btn.setEnabled(True)
             self.me_delete_employee_btn.setEnabled(False)
 
-
-
     def populate_employee_info(self):
         """Displays selected employee info"""
         self.me_update_employee_btn.setEnabled(True)
@@ -443,18 +418,23 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.mp_product_gbox.setEnabled(True)
             self.mp_name_field.setText(self.mp_current_product.name)
             self.mp_barcode_sbox.setValue(int(self.mp_current_product.barcode))
-            self.mp_available_units_sbox.setValue(int(self.mp_current_product.available))
             self.mp_price_sbox.setValue(self.mp_current_product.price)
             self.mp_customer_price_sbox.setValue(self.mp_current_product.customer_price)
             if self.mp_current_product.weigh_b:
                 self.mp_weight_rb.setChecked(True)
+                self.toggle_tens(True)
+                self.mp_available_units_sbox.setValue(int(self.mp_current_product.available[:-3]))
+                self.mp_available_units_2_sbox.setValue(int(self.mp_current_product.available[-2:]) * .01)
             else:
                 self.mp_quantity_rb.setChecked(True)
+                self.mp_available_units_sbox.setValue(int(self.mp_current_product.available))
+                self.toggle_tens(False)
             self.mp_provider_sbox.setValue(int(self.mp_current_product.provider))
             self.mp_barcode_search_field.setText("")
         except TypeError:
             self.set_status_style("red")
             self.statusbar.showMessage("***Error--Invalid Barcode***", 4000)
+        self.mp_update_btn.setText("Update Product")
 
     def handle_add_new_product(self):
         """Clears product fields so new info can be added"""
@@ -465,12 +445,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_delete_btn.setEnabled(True)
         self.mp_update_btn.setEnabled(True)
         self.mp_name_field.setText("")
-        self.mp_barcode_field.setText("")
-        self.mp_available_units_field.setText("")
-        self.mp_price_field.setText("")
-        self.mp_customer_price_field.setText("")
+        self.mp_barcode_sbox.setValue(0)
+        self.mp_available_units_sbox.setValue(0)
+        if self.mp_weight_rb.isChecked():
+            self.mp_available_units_2_sbox_setValue(0)
+        self.mp_price_sbox.setValue(0)
+        self.mp_customer_price_sbox.setValue(0)
         self.mp_quantity_rb.setChecked(True)
-        self.mp_provider_field.setText("")
+        self.mp_provider_sbox.setValue(0)
         self.mp_current_product = product.Product(self.mp_name_field.text(), self.mp_barcode_sbox.value(),
                                                   self.mp_available_units_sbox.value(),
                                                   self.mp_price_sbox.value(), self.mp_customer_price_sbox.value(),
@@ -484,12 +466,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 self.products_table = self.db['products']
                 if self.mp_quantity_rb.isChecked():
                     weigh = 0
+                    available = self.mp_available_units_sbox.value()
                 else:
                     weigh = 1
+                    available = str(self.mp_available_units_sbox.value()) + str(self.mp_available_units_2_sbox.value())[1:4]
                 # Update a record
                 try:
                     self.products_table.insert(dict(name=self.mp_name_field.text(), barcode=int(self.mp_barcode_sbox.value()),
-                                                    available_units=self.mp_available_units_sbox.value(),
+                                                    available_units=available,
                                                     price=self.mp_price_sbox.value(),
                                                customer_price=self.mp_customer_price_sbox.value(),
                                                weigh_b=weigh, provider=self.mp_provider_sbox.value())) # ValueError: invalid literal for int() with base 10: ''
@@ -508,26 +492,28 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 self.products_table = self.db['products']
                 if self.mp_quantity_rb.isChecked():
                     weigh = 0
+                    available = self.mp_available_units_sbox.value()
                 else:
                     weigh = 1
+                    available = str(self.mp_available_units_sbox.value()) + str(self.mp_available_units_2_sbox.value())[1:4]
+                    if available[-2:] == '.0':
+                        available += '0'
                 try:
-                    self.products_table.insert(dict(barcode=int(self.mp_barcode_sbox.value())))
-                    try:
 
-                        self.products_table.update(dict(name=self.mp_name_field.text(), barcode=int(self.mp_barcode_sbox.value()),
-                                                        available_units=self.mp_available_units_sbox.value(),
-                                                        price=self.mp_price_sbox.value(),
-                                                        customer_price=self.mp_customer_price_sbox.value(),
-                                                        weigh_b=weigh, provider=self.mp_provider_sbox.value()), ['barcode'])  # ValueError: invalid literal for int() with base 10: ''
-                        self.set_status_style("green")
-                        self.statusbar.showMessage("***" + self.mp_name_field.text() + " information updated***", 4000)
-                    except:
-                        print("Error updating item")
-                        self.set_status_style("red")
-                        self.statusbar.showMessage("***Error--" + self.mp_name_field.text() + "\'s information not updated***", 4000)
+                    self.products_table.update(dict(name=self.mp_name_field.text(), barcode=int(self.mp_barcode_sbox.value()),
+                                                    available_units=available,
+                                                    price=self.mp_price_sbox.value(),
+                                                    customer_price=self.mp_customer_price_sbox.value(),
+                                                    weigh_b=weigh, provider=self.mp_provider_sbox.value()), ['barcode'])  # ValueError: invalid literal for int() with base 10: ''
+                    self.set_status_style("green")
+                    self.statusbar.showMessage("***" + self.mp_name_field.text() + " information updated***", 4000)
                 except:
+                    print("Error updating item")
                     self.set_status_style("red")
-                    self.statusbar.showMessage("***Error--Another product with that barcode already exists***", 4000)
+                    self.statusbar.showMessage("***Error--" + self.mp_name_field.text() + "\'s information not updated***", 4000)
+                # except:
+                #     self.set_status_style("red")
+                #     self.statusbar.showMessage("***Error--Another product with that barcode already exists***", 4000)
 
         else:
             self.set_status_style("red")
@@ -535,27 +521,44 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
     def handle_delete_product(self):
         """Delete product from database"""
-        # TODO: confirmation dialog
         self.products_table = self.db['products']
         try:
-            self.products_table.delete(barcode=int(self.mp_barcode_sbox.value()))
-            self.set_status_style("green")
-            self.statusbar.showMessage("***" + self.mp_name_field.text() + " deleted from Product Database***", 4000)
+
+            # Delete a record
+            self.caution_dialog = caution_dialog.CautionDialog(self)
+            self.caution_dialog.exec_()
+            if self.caution_dialog.delete_b:
+                self.products_table.delete(barcode=int(self.mp_barcode_sbox.value()))
+                self.set_status_style("green")
+                self.statusbar.showMessage("***" + self.mp_name_field.text() + " deleted from Product Database***", 4000)
+                self.mp_add_btn.setEnabled(True)
+                self.mp_name_field.setText("")
+                self.mp_barcode_sbox_setValue(0)
+                self.mp_available_units_sbox_setValue(0)
+                if self.mp_weight_rb.isChecked():
+                    self.mp_available_units_2_sbox_setValue(0)
+                    self.mp_quantity_rb.setChecked(True)
+                self.mp_price_sbox_setValue(0)
+                self.mp_customer_price_sbox_setValue(0)
+                self.mp_quantity_rb.setChecked(True)
+                self.mp_provider_sbox_setValue(0)
+                self.mp_product_gbox.setEnabled(False)
+                self.mp_delete_btn.setEnabled(False)
+                self.mp_update_btn.setEnabled(False)
+                self.mp_update_btn.setText("Update Product")
         except ValueError as e:
            print(str(e))
            self.set_status_style("red")
            self.statusbar.showMessage("***Error--" + self.mp_name_field.text() + " not deleted from Product Database***", 4000)
-        self.mp_add_btn.setEnabled(True)
-        self.mp_name_field.setText("")
-        self.mp_barcode_field.setText("")
-        self.mp_available_units_field.setText("")
-        self.mp_price_field.setText("")
-        self.mp_customer_price_field.setText("")
-        self.mp_quantity_rb.setChecked(True)
-        self.mp_provider_field.setText("")
-        self.mp_product_gbox.setEnabled(False)
-        self.mp_delete_btn.setEnabled(False)
-        self.mp_update_btn.setEnabled(False)
+
+
+    def toggle_tens(self, event):
+        self.white_space.setHidden(not event)
+        self.mp_available_units_2_sbox.setHidden(not event)
+        if event:
+            self.mp_available_units_sbox.setAlignment(Qt.AlignRight)
+        else:
+            self.mp_available_units_sbox.setAlignment(Qt.AlignLeft)
 
     def handle_import_spreadsheet(self):
         file_options = {}
@@ -576,23 +579,21 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 if self.products_table.find_one(name=input_name):
                     self.products_table.update(dict(name=input_name,
                          available_units=input_available_units,
-                         price=input_price,
-                         customer_price=input_consumer_price,
+                         price=input_price, customer_price=input_consumer_price,
                          weigh_b=input_weight, provider=input_provider), ['barcode'])
                 else:
                     self.products_table.insert(
                         dict(name=input_name,
                              available_units=input_available_units,
-                            price=input_price,
-                            customer_price=input_consumer_price,
+                            price=input_price, customer_price=input_consumer_price,
                             weigh_b=input_weight, provider=input_provider), ['barcode'])
 
 
-    ######################################### TODO
-    # Manage Customers Functions # TODO
-    ######################################### TODO
-    def get_customer(self): # TODO
-        """Get customer info from Database""" # TODO
+    #########################################
+    # Manage Customers Functions
+    #########################################
+    def get_customer(self): #
+        """Get customer info from Database"""
         self.customers_table = self.db['customers']
         # Get a specific customer
         try:
@@ -860,12 +861,8 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.statusbar.showMessage("***Index Error--Please select an item***", 4000)
 
     def mo_update_inventory(self, row):
-        """comment"""
+        """"""
         try:
-            # print("Row #:" + str(row))
-            # print("Why are you not working?")
-            # print(str(self.current_receipt.names))
-            # print("Product Barcode: " + str(self.current_receipt.names[row]))
             self.products_table = self.db['products']
             # print("Successful connection to product db")
             prod = self.products_table.find_one(barcode=int(self.current_receipt.names[row]))
@@ -882,6 +879,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             print("Error updating inventory")
 
     def mo_update_receipt(self):
+        """"""
         print("Updating receipt")
         self.receipts_table = self.db['receipts']
         self.receipts_table.update(dict(other=str(self.current_receipt.other), name=str(self.current_receipt.names), quantity=str(self.current_receipt.quantity), price=str(self.current_receipt.price), text=str(self.current_receipt.text), r_id=self.current_receipt.other[0]), ['r_id'])
@@ -1120,6 +1118,26 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         """Show checkout frame"""
         self.bc_checkout_frame.setHidden(True)
 
+
+
+    # TODO
+    def handle_load_reservation_btn(self):
+        """"""
+        if not self.bc_customer_name_field.text() == "":
+            self.reservations_table = self.db['reservations']
+            self.customers_table = self.db['customers']
+
+            res = self.reservations_table.find_one(id=int(self.bc_reservation_num_sbox.value()))
+            barcodes = ast.literal_eval(res['barcodes'])
+            quantities = ast.literal_eval(res['quantities'])
+            self.current_reservation = reservation.Reservation(res['id'], res['customer_id'], res['r_date'], barcodes, quantities)
+            print("Customer ID:" + str(self.current_reservation.customer_id))
+            cust = self.customers_table.find_one(id=self.current_reservation.customer_id)
+            self.bc_current_customer = customer.Customer(cust['id'], cust['name'], cust['point_balance'], cust['is_active'], cust['receipts'], cust['reservations']) # id, name, pointBalance, activityStatus=True, receipts=None, reservations=None)
+            print("Customer:" + str(self.bc_current_customer.customer_name))
+            #TODO Compare name/id to field.text() then figure out how to load that shit.
+
+
     def bc_get_product(self):
         """Get product info from database and populate labels"""
         print("Calling DB - Product Lookup")
@@ -1277,7 +1295,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.products_table.update(dict(barcode=prod['barcode'], available_units=str(new_quantity)), ['barcode'])
 
     def launch_payment_dialog(self):
-        self.payment_dialog = PaymentDialog(self)
+        self.payment_dialog = payment_dialog.PaymentDialog(self, self.bc_current_customer)
         self.payment_dialog.exec_()
 
     def print_(self, method):
