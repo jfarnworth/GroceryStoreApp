@@ -1111,6 +1111,8 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.bc_barcode_search_field.setText("")
         self.bc_btn_frame.setEnabled(False)
 
+        self.bc_current_customer = None
+
     def enable_remove_btn(self):
         self.bc_remove_btn.setEnabled(True)
 
@@ -1120,22 +1122,87 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
 
 
+
+
+
+
+
+
     # TODO
     def handle_load_reservation_btn(self):
         """"""
         if not self.bc_customer_name_field.text() == "":
             self.reservations_table = self.db['reservations']
             self.customers_table = self.db['customers']
+            self.products_table = self.db['products']
 
             res = self.reservations_table.find_one(id=int(self.bc_reservation_num_sbox.value()))
             barcodes = ast.literal_eval(res['barcodes'])
             quantities = ast.literal_eval(res['quantities'])
+            print("Barcodes: {}\nQuantities: {}".format(barcodes, quantities))
             self.current_reservation = reservation.Reservation(res['id'], res['customer_id'], res['r_date'], barcodes, quantities)
             print("Customer ID:" + str(self.current_reservation.customer_id))
             cust = self.customers_table.find_one(id=self.current_reservation.customer_id)
             self.bc_current_customer = customer.Customer(cust['id'], cust['name'], cust['point_balance'], cust['is_active'], cust['receipts'], cust['reservations']) # id, name, pointBalance, activityStatus=True, receipts=None, reservations=None)
-            print("Customer:" + str(self.bc_current_customer.customer_name))
-            #TODO Compare name/id to field.text() then figure out how to load that shit.
+            print("Customer: " + str(self.bc_current_customer.customer_name))
+
+            self.load_reservation(self.current_reservation.barcodes, self.current_reservation.quantities)
+
+    def load_reservation(self, barcodes, quantities):
+        self.barcodes = barcodes
+        self.quantities = quantities
+
+        for x in range(0, len(self.barcodes)):
+            try:
+                print("Barcode: {}".format(self.barcodes[x]))
+                result = self.products_table.find_one(barcode=int(self.barcodes[x]))
+                print("Get here?")
+                print("Result: {}".format(result['name']))
+                self.res_current_product = product.Product(result['name'], result['barcode'], result['available_units'], result['price'], result['customer_price'], result['weigh_b'], result['provider'])  # product_name, product_barcode, product_available, product_price, customer_price, weigh, product_provider)
+                self.res_quantity = self.quantities[x]
+                print("Current Product: {}".format(self.res_current_product))
+                print("0")
+                self.res_handle_add_item()
+            except Exception as e:
+                print("Error: {}".format(repr(e)))
+
+    def res_handle_add_item(self):
+        """Add item to receipt and lists"""
+        print("1")
+        # Store barcode, quantity/weight, price for receipt storage
+        self.receipt_names.append(self.res_current_product.barcode)
+        self.receipt_text.append(self.res_current_product.name)
+        self.receipt_quantity.append(self.res_quantity)
+
+        self.receipt_price.append(str(self.res_current_product.customer_price))
+        self.res_update_receipt()
+
+    def res_update_receipt(self):
+        if not self.bc_receipt_frame.isEnabled():
+            self.bc_receipt_list_model = QStandardItemModel(self.bc_receipt_listview)
+        self.bc_receipt_frame.setEnabled(True)
+
+        if self.res_current_product.weigh_b:
+            item = QStandardItem(self.res_current_product.name + ' (' + str(Decimal(self.res_quantity).quantize(self.cents, ROUND_HALF_UP)) + ' lbs)\n$' + str(
+                Decimal(Decimal(self.res_quantity) * Decimal(self.res_current_product.customer_price)).quantize(self.cents, ROUND_HALF_UP)))
+        else:
+            item = QStandardItem(self.res_current_product.name + ' (' + str(self.res_quantity) + ')\n$' + str(
+                Decimal(int(self.res_quantity) * Decimal(self.res_current_product.customer_price)).quantize(self.cents, ROUND_HALF_UP)))
+
+        self.bc_receipt_list_model.appendRow(item)
+        self.bc_receipt_listview.setModel(self.bc_receipt_list_model)
+
+        #Calculate totals
+        self.subtotal += Decimal(Decimal(self.res_quantity).quantize(self.cents, ROUND_HALF_UP) * Decimal(self.res_current_product.customer_price)).quantize(self.cents, ROUND_HALF_UP)
+        self.tax += Decimal((Decimal(self.res_quantity).quantize(self.cents, ROUND_HALF_UP) * Decimal(self.res_current_product.customer_price)) * self.tax_rate).quantize(self.cents, ROUND_HALF_UP)
+        self.total = self.subtotal + self.tax
+
+        # Update totals labels
+        self.bc_r_subtotal_lbl.setText('$' + str(self.subtotal))
+        self.bc_tax_lbl.setText('$' + str(self.tax))
+        self.bc_total_lbl.setText('$' + str(self.total))
+
+        self.bc_btn_frame.setEnabled(True)
 
 
     def bc_get_product(self):
@@ -1202,14 +1269,11 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.bc_receipt_frame.setEnabled(True)
 
         if self.current_product.weigh_b:
-            item = QStandardItem(self.bc_name_lbl.text() + ' (' + str(Decimal(self.bc_weight_sbox.value()).quantize(self.cents,
-                                                                                                           ROUND_HALF_UP)) + ' lbs)\n$' + str(
-                Decimal(Decimal(self.bc_weight_sbox.value()) * Decimal(self.bc_price_lbl.text())).quantize(self.cents,
-                                                                                                           ROUND_HALF_UP)))
+            item = QStandardItem(self.bc_name_lbl.text() + ' (' + str(Decimal(self.bc_weight_sbox.value()).quantize(self.cents, ROUND_HALF_UP)) + ' lbs)\n$' + str(
+                Decimal(Decimal(self.bc_weight_sbox.value()) * Decimal(self.bc_price_lbl.text())).quantize(self.cents, ROUND_HALF_UP)))
         else:
             item = QStandardItem(self.bc_name_lbl.text() + ' (' + str(self.bc_quantity_sbox.value()) + ')\n$' + str(
-                Decimal(int(self.bc_quantity_sbox.value()) * Decimal(self.bc_price_lbl.text())).quantize(self.cents,
-                                                                                                         ROUND_HALF_UP)))
+                Decimal(int(self.bc_quantity_sbox.value()) * Decimal(self.bc_price_lbl.text())).quantize(self.cents, ROUND_HALF_UP)))
         # item.setCheckable(True)
 
         self.bc_receipt_list_model.appendRow(item)
@@ -1246,7 +1310,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
         try:
             row = self.bc_receipt_listview.selectedIndexes()[0].row()
-
+            print("Row: []".format(row))
             # UPDATE TOTALS
             if isinstance(self.receipt_quantity[row], int):
                 self.subtotal -= Decimal(float(self.receipt_quantity[row]) * float(self.receipt_price[row])).quantize(self.cents, ROUND_HALF_UP)
@@ -1254,15 +1318,12 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 self.total -= Decimal(float(self.receipt_quantity[row]) * float(self.receipt_price[row])).quantize(self.cents, ROUND_HALF_UP) + Decimal((self.receipt_quantity[row] * Decimal(self.receipt_price[row])) * self.tax_rate).quantize(
                     self.cents, ROUND_HALF_UP)
             else:
-                self.subtotal -= Decimal(int(self.receipt_quantity[row]) * self.receipt_price[row]).quantize(self.cents,
-                                                                                                             ROUND_HALF_UP)
-                self.tax -= Decimal(
-                    (int(self.receipt_quantity[row]) * Decimal(self.receipt_price[row])) * self.tax_rate).quantize(
-                    self.cents, ROUND_HALF_UP)
-                self.total -= Decimal(int(self.receipt_quantity[row]) * self.receipt_price[row]).quantize(self.cents,
-                                                                                                          ROUND_HALF_UP) + Decimal(
-                    (int(self.receipt_quantity[row]) * Decimal(self.receipt_price[row])) * self.tax_rate).quantize(
-                    self.cents, ROUND_HALF_UP)
+                self.subtotal -= Decimal(Decimal(self.receipt_quantity[row]) * Decimal(self.receipt_price[row])).quantize(self.cents, ROUND_HALF_UP)
+                self.tax -= Decimal(Decimal(self.receipt_quantity[row]) * Decimal(self.receipt_price[row]) * Decimal(self.tax_rate)).quantize(self.cents, ROUND_HALF_UP)
+                self.total -= Decimal(Decimal(self.receipt_quantity[row]) * Decimal(self.receipt_price[row])).quantize(self.cents, ROUND_HALF_UP) + Decimal(Decimal(self.receipt_quantity[row]) * Decimal(self.receipt_price[row]) * Decimal(self.tax_rate)).quantize( self.cents, ROUND_HALF_UP)
+
+            if self.tax < 0:
+                self.tax = Decimal(0).quantize(self.cents, ROUND_HALF_UP)
 
             # Update totals labels
             self.bc_r_subtotal_lbl.setText('$' + str(self.subtotal))
@@ -1339,8 +1400,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 doc.print_(printer)
             except:
                 print("?")
+        if self.payment_dialog.current_customer is not None:
+            customer_id = self.payment_dialog.current_customer.customer_id
+        else:
+            customer_id = None
         self.receipts_table = self.db['receipts']
-        self.receipts_table.insert(dict(date=str(self.receipt_date), other=str(self.receipt_other), name=str(self.receipt_names), quantity=str(self.receipt_quantity), price=str(self.receipt_price), text=str(self.receipt_text), r_id=self.receipt_other[0], date_time=self.receipt_date_time))
+        self.receipts_table.insert(dict(date=str(self.receipt_date), other=str(self.receipt_other), name=str(self.receipt_names), quantity=str(self.receipt_quantity),
+                                        price=str(self.receipt_price), text=str(self.receipt_text), r_id=self.receipt_other[0], date_time=self.receipt_date_time, customer_id=customer_id))
         self.update_inventory()
         self.populate_mo_listview()
         self.cancel_transaction()
