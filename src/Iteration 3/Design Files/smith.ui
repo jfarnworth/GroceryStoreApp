@@ -34,7 +34,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>5</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="manage_employees_tab">
      <attribute name="title">
@@ -613,7 +613,7 @@
         <bool>false</bool>
        </property>
        <property name="prefix">
-        <string> </string>
+        <string/>
        </property>
        <property name="suffix">
         <string> lbs</string>
@@ -674,14 +674,6 @@
        <string>Import from Excel</string>
       </property>
      </widget>
-     <zorder>label_33</zorder>
-     <zorder>mp_barcode_search_field</zorder>
-     <zorder>mp_search_btn</zorder>
-     <zorder>mp_product_gbox</zorder>
-     <zorder>mp_add_btn</zorder>
-     <zorder>mp_import_btn</zorder>
-     <zorder>mp_customer_price_sbox</zorder>
-     <zorder>mp_price_sbox</zorder>
     </widget>
     <widget class="QWidget" name="manage_customers_tab">
      <attribute name="title">

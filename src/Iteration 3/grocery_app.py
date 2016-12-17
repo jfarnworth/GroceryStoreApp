@@ -4,7 +4,7 @@ from Classes import employee, product, receipt, customer, reservation
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, QSplashScreen, QProgressBar, QDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, QSplashScreen, QProgressBar, QDialog, QMessageBox
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 import caution_dialog, payment_dialog
@@ -20,6 +20,8 @@ import os
 import xlrd
 
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter, QPrintDialog
+import winsound         # for sound
+import time             # for sleep
 
 # Get exception codes
 # Back up the reference to the exceptionhook
@@ -77,13 +79,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
         # Setup
         self.setWindowTitle("Smith's Grocery")
-        self.setWindowIcon(QtGui.QIcon('48x48.png'))
+        self.setWindowIcon(QtGui.QIcon('Assets/48x48.png'))
         self.move(QDesktopWidget().availableGeometry().center() - self.frameGeometry().center())
 
         self.double_validator = QtGui.QDoubleValidator()
         self.int_validator = QtGui.QIntValidator()
 
-        self.setWindowIcon(QtGui.QIcon('SmithsLogo.png'))
+        self.setWindowIcon(QtGui.QIcon('Assets/SmithsLogo.png'))
         self.cents = Decimal('.01')
 
         self.GREEN_STATUS = """QStatusBar {color: #008e14}"""
@@ -91,7 +93,8 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.RED_STATUS = """QStatusBar {color: red}"""
 
         # connecting to a SQLite database
-        self.db = dataset.connect('sqlite:///smith.db')
+        # self.db = dataset.connect('sqlite:///smith.db')
+        self.db = dataset.connect('sqlite:///SmithsWebApp/smiths/smith.db')
         print("Connected " + str(self.db))
         self.employees_table = self.db['employees']
         self.points_table = self.db['points']
@@ -100,6 +103,11 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.employees_table.insert(dict(id=0, name="admin", password="system", role=0))
         except:
             print("Database Exists")
+            # winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+            # time.sleep(0.25)  # in seconds (0.25 is 250ms)
+            #
+            # winsound.Beep(600, 250)
+            # time.sleep(0.25)
 
 
         # Insert points rules
@@ -108,6 +116,10 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         except:
             print("Points Table Exists")
 
+        try:
+            self.products_table = self.db.create_table("products", primary_id='barcode', primary_type='Integer')
+        except:
+            print("Products Table Exists")
         self.get_employees()  # populate employee list
         self.current_employee = None
         self.launch_login_dialog()
@@ -200,9 +212,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.reservations_table = self.db['reservations']
         try:
             date = str(datetime.datetime.now().strftime("%m/%d/%Y"))
-            self.reservations_table.insert(dict(id=0, customer_id=1, r_date=date, barcodes=str([1,2,3]), quantities=str([1,2,3.22])))
+            self.reservations_table.insert(dict(id=0, customer_id=1, r_date=date, barcodes=str(['1','2','3']), quantities=str(['1', '2' , '3.22'])))
         except:
-            print("Reservations table exists")
+            print("Reservations Table Exists")
+        # except Exception as e:
+        #     exc_type, exc_obj, exc_tb = sys.exc_info()
+        #     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        #     print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+        #     print("Reservations table exists")
 
         #########################################
         # Begin Checkout Initializing
@@ -255,10 +272,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             for emp in self.db['employees']:
                 self.employee_list.append(
                     employee.Employee(int(emp['id']), str(emp['name']), str(emp['password']), int(emp['role'])))
-        except:
-            print("error")
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Error loading employee data***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
 
     def display_tabs(self):
@@ -312,13 +333,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.me_employee_gbox.setEnabled(True)
         self.me_create_new_employee_btn.setEnabled(False)
         self.me_update_employee_btn.setText("Insert Employee")
+        self.me_update_employee_btn.setEnabled(True)
         self.me_delete_employee_btn.setEnabled(True)
 
     def handle_update_employee(self):
         """Updates employee info"""
         if self.me_name_field.text() != "":
             if self.me_new_employee_b:
-                print("Calling DB")  # update new employee
+                # print("Calling DB")  # update new employee
                 # get a reference to the table 'user'
                 self.employees_table = self.db['employees']
                 # Insert a new record
@@ -329,9 +351,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     self.me_new_employee_b = False
                     self.set_status_style("green")
                     self.statusbar.showMessage( self.me_name_field.text() + " added to Users***", 4000)
-                except:
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
                     self.set_status_style("red")
                     self.statusbar.showMessage("***Error--" + self.me_name_field.text() + " not added to Users***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
                 self.me_create_new_employee_btn.setEnabled(True)
                 self.me_update_employee_btn.setEnabled(False)
                 self.me_delete_employee_btn.setEnabled(False)
@@ -349,9 +376,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                                                      role=self.me_role_cbox.currentIndex()), ['id'])
                     self.set_status_style("green")
                     self.statusbar.showMessage("***" + self.me_name_field.text() + "\'s information updated***", 4000)
-                except:
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
                     self.set_status_style("red")
                     self.statusbar.showMessage("***Error--" + self.me_name_field.text() + "\'s information not updated***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
                 self.me_create_new_employee_btn.setEnabled(True)
                 self.me_update_employee_btn.setEnabled(False)
                 self.me_delete_employee_btn.setEnabled(False)
@@ -366,13 +398,15 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
     def handle_delete_employee(self):
         """Delete employee from database"""
-        self.employees_table = self.db['employees']
-        if self.me_id_lbl.text() != '0':
-            try:
-                # Delete a record
-                self.caution_dialog = caution_dialog.CautionDialog(self)
-                self.caution_dialog.exec_()
-                if self.caution_dialog.delete_b:
+        result = QMessageBox.question(self, 'Delete Employee Confirmation', "Are you certain you want to delete this employee?", QMessageBox.Yes, QMessageBox.No)
+        if result == QMessageBox.Yes:
+            self.employees_table = self.db['employees']
+            if self.me_id_lbl.text() != '0':
+                try:
+                    # Delete a record
+                    # self.caution_dialog = caution_dialog.CautionDialog(self)
+                    # self.caution_dialog.exec_()
+                    # if self.caution_dialog.delete_b:
                     self.employees_table.delete(id=int(self.me_id_lbl.text()))
                     self.set_status_style("green")
                     self.statusbar.showMessage("***" + self.me_name_field.text() + " deleted from Users***", 4000)
@@ -384,11 +418,16 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     self.me_delete_employee_btn.setEnabled(False)
                     self.get_employees()  # recreate employee list
                     self.populate_me_employee_list_view()  # reload employee list view
-            except:
-                self.set_status_style("red")
-                self.statusbar.showMessage("***Error--" + self.me_name_field.text() + " not deleted from Users***", 4000)
-            self.me_create_new_employee_btn.setEnabled(True)
-            self.me_delete_employee_btn.setEnabled(False)
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
+                    self.set_status_style("red")
+                    self.statusbar.showMessage("***Error--" + self.me_name_field.text() + " not deleted from Users***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+                self.me_create_new_employee_btn.setEnabled(True)
+                self.me_delete_employee_btn.setEnabled(False)
 
     def populate_employee_info(self):
         """Displays selected employee info"""
@@ -396,6 +435,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.me_employee_gbox.setEnabled(True)
         self.me_delete_employee_btn.setEnabled(True)
         self.me_update_employee_btn.setEnabled(True)
+        self.me_update_employee_btn.setText("Update Employee")
         self.edit_employee = self.employee_list[self.me_employee_listview.selectedIndexes()[0].row()]
         self.me_id_lbl.setText(str(self.edit_employee.employee_id))
         self.me_name_field.setText(self.edit_employee.employee_name)
@@ -412,28 +452,35 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         # Get a specific product
         try:
             prod = self.products_table.find_one(barcode=int(self.mp_barcode_search_field.text())) # TypeError: 'NoneType' object is not subscriptable
+            self.mp_add_btn.setEnabled(True)
             self.mp_delete_btn.setEnabled(True)
             self.mp_update_btn.setEnabled(True)
             self.mp_current_product = product.Product(prod['name'], prod['barcode'], prod['available_units'], prod['price'], prod['customer_price'], prod['weigh_b'], prod['provider'])
             self.mp_product_gbox.setEnabled(True)
             self.mp_name_field.setText(self.mp_current_product.name)
             self.mp_barcode_sbox.setValue(int(self.mp_current_product.barcode))
-            self.mp_price_sbox.setValue(self.mp_current_product.price)
-            self.mp_customer_price_sbox.setValue(self.mp_current_product.customer_price)
+            self.mp_barcode_sbox.setEnabled(False)
+            self.mp_price_sbox.setValue(float(self.mp_current_product.price))
+            self.mp_customer_price_sbox.setValue(float(self.mp_current_product.customer_price))
             if self.mp_current_product.weigh_b:
                 self.mp_weight_rb.setChecked(True)
                 self.toggle_tens(True)
-                self.mp_available_units_sbox.setValue(int(self.mp_current_product.available[:-3]))
-                self.mp_available_units_2_sbox.setValue(int(self.mp_current_product.available[-2:]) * .01)
+                self.mp_available_units_sbox.setValue(int(str(self.mp_current_product.available)[:-3]))
+                self.mp_available_units_2_sbox.setValue(int(float(str(self.mp_current_product.available)[-2:])) * .01)
             else:
                 self.mp_quantity_rb.setChecked(True)
                 self.mp_available_units_sbox.setValue(int(self.mp_current_product.available))
                 self.toggle_tens(False)
             self.mp_provider_sbox.setValue(int(self.mp_current_product.provider))
             self.mp_barcode_search_field.setText("")
-        except TypeError:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Error--Invalid Barcode***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
         self.mp_update_btn.setText("Update Product")
 
     def handle_add_new_product(self):
@@ -445,6 +492,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mp_delete_btn.setEnabled(True)
         self.mp_update_btn.setEnabled(True)
         self.mp_name_field.setText("")
+        self.mp_barcode_sbox.setEnabled(True)
         self.mp_barcode_sbox.setValue(0)
         self.mp_available_units_sbox.setValue(0)
         if self.mp_weight_rb.isChecked():
@@ -464,6 +512,8 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         if self.mp_name_field.text() != "":
             if self.mp_new_product_b:
                 self.products_table = self.db['products']
+                price = str(Decimal(self.mp_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+                cust_price = str(Decimal(self.mp_customer_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
                 if self.mp_quantity_rb.isChecked():
                     weigh = 0
                     available = self.mp_available_units_sbox.value()
@@ -472,24 +522,30 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     available = str(self.mp_available_units_sbox.value()) + str(self.mp_available_units_2_sbox.value())[1:4]
                 # Update a record
                 try:
-                    self.products_table.insert(dict(name=self.mp_name_field.text(), barcode=int(self.mp_barcode_sbox.value()),
-                                                    available_units=available,
-                                                    price=self.mp_price_sbox.value(),
-                                               customer_price=self.mp_customer_price_sbox.value(),
-                                               weigh_b=weigh, provider=self.mp_provider_sbox.value())) # ValueError: invalid literal for int() with base 10: ''
+                    price = str(Decimal(self.mp_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+                    cust_price = str(Decimal(self.mp_customer_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+
+                    self.products_table.insert(dict(barcode=int(self.mp_barcode_sbox.value()), name=self.mp_name_field.text(), available_units=available, price=price,
+                                               customer_price=cust_price, weigh_b=weigh, provider=self.mp_provider_sbox.value())) # ValueError: invalid literal for int() with base 10: ''
                     self.mp_new_product_b = False
                     self.set_status_style("green")
                     self.statusbar.showMessage("***" + self.mp_name_field.text() + " added to Products Database***", 4000)
 
                     self.mp_update_btn.setText("Update Product")
                 except Exception as e:
-                    print(str(repr(e)))
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
                     print("Error adding new item")
+
                     self.set_status_style("red")
                     self.statusbar.showMessage("***Error--bardcode already in use. " + self.mp_name_field.text() + " not added to Products Database***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
                 self.mp_add_btn.setEnabled(True)
             else:
                 self.products_table = self.db['products']
+                price = str(Decimal(self.mp_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+                cust_price = str(Decimal(self.mp_customer_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
                 if self.mp_quantity_rb.isChecked():
                     weigh = 0
                     available = self.mp_available_units_sbox.value()
@@ -498,26 +554,33 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     available = str(self.mp_available_units_sbox.value()) + str(self.mp_available_units_2_sbox.value())[1:4]
                     if available[-2:] == '.0':
                         available += '0'
+                    price = str(Decimal(self.mp_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+                    cust_price = str(Decimal(self.mp_customer_price_sbox.value()).quantize(self.cents, ROUND_HALF_UP))
+                    print("Price: {}".format(price))
+                    print("CPrice: {}".format(cust_price))
                 try:
-
-                    self.products_table.update(dict(name=self.mp_name_field.text(), barcode=int(self.mp_barcode_sbox.value()),
-                                                    available_units=available,
-                                                    price=self.mp_price_sbox.value(),
-                                                    customer_price=self.mp_customer_price_sbox.value(),
-                                                    weigh_b=weigh, provider=self.mp_provider_sbox.value()), ['barcode'])  # ValueError: invalid literal for int() with base 10: ''
+                    self.products_table.update(dict(name=self.mp_name_field.text(), barcode=int(self.mp_barcode_sbox.value()), available_units=available, price=price,
+                                                    customer_price=cust_price, weigh_b=weigh, provider=self.mp_provider_sbox.value()), ['barcode'])  # ValueError: invalid literal for int() with base 10: ''
                     self.set_status_style("green")
                     self.statusbar.showMessage("***" + self.mp_name_field.text() + " information updated***", 4000)
-                except:
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
                     print("Error updating item")
+
                     self.set_status_style("red")
                     self.statusbar.showMessage("***Error--" + self.mp_name_field.text() + "\'s information not updated***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
                 # except:
                 #     self.set_status_style("red")
                 #     self.statusbar.showMessage("***Error--Another product with that barcode already exists***", 4000)
 
         else:
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Error--Incomplete Please fill out all the product information***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def handle_delete_product(self):
         """Delete product from database"""
@@ -525,15 +588,15 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         try:
 
             # Delete a record
-            self.caution_dialog = caution_dialog.CautionDialog(self)
-            self.caution_dialog.exec_()
-            if self.caution_dialog.delete_b:
+            result = QMessageBox.question(self, 'Delete Product Confirmation', "Are you certain you want to delete this product?", QMessageBox.Yes, QMessageBox.No)
+            if result == QMessageBox.Yes:
                 self.products_table.delete(barcode=int(self.mp_barcode_sbox.value()))
                 self.set_status_style("green")
                 self.statusbar.showMessage("***" + self.mp_name_field.text() + " deleted from Product Database***", 4000)
                 self.mp_add_btn.setEnabled(True)
                 self.mp_name_field.setText("")
-                self.mp_barcode_sbox_setValue(0)
+                self.mp_barcode_sbox.setEnabled(True)
+                self.mp_barcode_sbox.setValue(0)
                 self.mp_available_units_sbox_setValue(0)
                 if self.mp_weight_rb.isChecked():
                     self.mp_available_units_2_sbox_setValue(0)
@@ -547,9 +610,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 self.mp_update_btn.setEnabled(False)
                 self.mp_update_btn.setText("Update Product")
         except ValueError as e:
-           print(str(e))
-           self.set_status_style("red")
-           self.statusbar.showMessage("***Error--" + self.mp_name_field.text() + " not deleted from Product Database***", 4000)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
+            self.set_status_style("red")
+            self.statusbar.showMessage("***Error--" + self.mp_name_field.text() + " not deleted from Product Database***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
 
     def toggle_tens(self, event):
@@ -594,6 +661,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
     #########################################
     def get_customer(self): #
         """Get customer info from Database"""
+        self.mc_add_btn.setEnabled(True)
         self.customers_table = self.db['customers']
         # Get a specific customer
         try:
@@ -601,6 +669,10 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 cust = self.customers_table.find_one(id=int(self.mc_name_id_search_field.text())) # TypeError: 'NoneType' object is not subscriptable
             else:
                 cust = self.customers_table.find_one(name=str(self.mc_name_id_search_field.text()))  # TypeError: 'NoneType' object is not subscriptable
+            if cust['point_balance'] is None:
+                cu_id = cust['id']
+                self.customers_table.update(dict(name=cust['name'], point_balance=0, is_active=1), ['name'])
+                self.cust = self.customers_table.find_one(id=cu_id)
             self.mc_activity_cb.setEnabled(True)
             self.mc_update_btn.setEnabled(True)
             self.mc_current_customer = customer.Customer(cust['id'], cust['name'], cust['point_balance'], cust['is_active'], cust['receipts'], cust['reservations']) # id, name, pointBalance, activityStatus, receipts, reservations
@@ -611,14 +683,17 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.mc_activity_cb.setChecked(self.mc_current_customer.is_active)
 
             self.mc_name_id_search_field.setText("")
-        except TypeError:
+        except TypeError as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Error--Customer does not exist. Invalid Name or ID***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def handle_add_new_customer(self):
         """Clears customer fields so new info can be added"""
-
-        print()
         self.mc_new_customer_b = True
         self.mc_customer_gbox.setEnabled(True)
         self.mc_activity_cb.setEnabled(True)
@@ -643,11 +718,17 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     self.set_status_style("green")
                     self.statusbar.showMessage("***" + self.mc_id_lbl.text() + ' ' + self.mc_name_field.text() + " added to Customer Database***", 4000)
                 except ValueError as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
                     print(e + " Error adding new customer")
+
                     self.set_status_style("red")
                     self.statusbar.showMessage("***Error--" + self.mc_id_lbl.text() + ' ' + self.mc_name_field.text() + " not added to Customer Database***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
                 self.mc_add_btn.setEnabled(True)
             else:
+                self.mc_add_btn.setEnabled(True)
                 self.customers_table = self.db['customers']
                 try:
                     self.customers_table.update(dict(id=int(self.mc_id_lbl.text()), name=self.mc_name_field.text(),
@@ -655,9 +736,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                     self.set_status_style("green")
                     self.statusbar.showMessage("***" + self.mc_id_lbl.text() + ' ' + self.mc_name_field.text() + " information updated***", 4000)
                 except ValueError as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
                     print(e + " Error updating customer")
+
                     self.set_status_style("red")
                     self.statusbar.showMessage("***Error--" + self.mc_id_lbl.text() + ' ' + self.mc_name_field.text() + "\'s information not updated***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     # def handle_inactivate_customer(self):
     #     """Delete customer from database"""
@@ -686,10 +772,15 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.points_table.update(dict(id=0, earn=self.earn_sbox.value(), spend=self.spend_sbox.value()), ['id'])  # ValueError: invalid literal for int() with base 10: ''
             self.set_status_style("green")
             self.statusbar.showMessage("***Point Rules updated***", 4000)
-        except:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
             print("Error updating point rules")
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Error--Point Rules not updated***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
 
     #########################################
@@ -699,7 +790,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         """comment"""
         self.mo_date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
         self.mo_date_lbl.setText(str(self.mo_date_edit.date().toString("MMMM dd, yyyy")))
-        print("Manage Order init")
+        # print("Manage Order init")
 
     def populate_mo_listview(self):
         """comment"""
@@ -736,7 +827,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.mo_r_cashier_lbl.setText(str(emply['name']))
         self.mo_r_method_lbl.setText(str(self.current_receipt.other[3]))
 
-        print(str(self.current_receipt.other))
+        # print(str(self.current_receipt.other))
 
         self.mo_subtotal = Decimal(self.current_receipt.other[4]).quantize(self.cents, ROUND_HALF_UP)
         self.mo_tax = Decimal(self.current_receipt.other[5]).quantize(self.cents, ROUND_HALF_UP)
@@ -781,7 +872,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.mo_r_cashier_lbl.setText(str(emply['name']))
             self.mo_r_method_lbl.setText(str(self.current_receipt.other[3]))
 
-            print(str(self.current_receipt.other))
+            # print(str(self.current_receipt.other))
 
             self.mo_subtotal = Decimal(self.current_receipt.other[4]).quantize(self.cents, ROUND_HALF_UP)
             self.mo_tax = Decimal(self.current_receipt.other[5]).quantize(self.cents, ROUND_HALF_UP)
@@ -802,9 +893,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 self.mo_receipt_list_model.appendRow(item)
 
             self.mo_receipt_listview.setModel(self.mo_receipt_list_model)
-        except:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Search Error--Please enter a valid Receipt ID***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def enable_mo_remove_btn(self):
         self.mo_btn_frame.setEnabled(True)
@@ -856,9 +952,14 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.mo_update_receipt()
             self.populate_mo_listview()
 
-        except IndexError:  # If no items are selected
+        except IndexError as e:  # If no items are selected
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Index Error--Please select an item***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def mo_update_inventory(self, row):
         """"""
@@ -873,10 +974,15 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 new_quantity = int(prod['available_units']) + self.current_receipt.quantity[row]
             self.products_table.update(dict(barcode=prod['barcode'], available_units=str(new_quantity)), ['barcode'])
 
-        except:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Error updating inventory***", 4000)
             print("Error updating inventory")
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def mo_update_receipt(self):
         """"""
@@ -893,7 +999,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.r_date_edit_end.setDateTime(QtCore.QDateTime.currentDateTime())
 
         # self.report_table.horizontalHeader().setDefaultAlignment(Qt.AlignRight)
-        self.report_list = [["Apple", "250", "149.30"], ["Orange", "290", "245.48"], ["Grapes", "30 lbs", "130.45"], ["Peanut Butter", "223", "544.32"], ["Socks", "3", "1.45"]]
+        self.report_list = [["", "", ""]]
         self.header = ["Product", "Total Sold", "Revenue"]
         table_model = table_model_class.TableModel(self, self.report_list, self.header)
         self.report_table.setModel(table_model)
@@ -940,7 +1046,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
                 self.report_receipt_list.append(receipt.Receipt(rect['date'], name, price, quantity, text, other))
 
-        print(str(self.report_receipt_list))
+        print("Report Receipt List: {}".format(self.report_receipt_list))
         self.calculate_totals()
 
     def calculate_totals(self):
@@ -952,22 +1058,22 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.total_revenue = Decimal(0.00).quantize(self.cents, ROUND_HALF_UP)
             self.first_time_b = True
 
-            # Read through receipts
             for order in self.report_receipt_list:
                 # Read through items on the receipt
                 self.total_orders += 1
                 for i in range(0, len(order.names)):
                     # Check if product is in master list
                     if self.first_time_b:
-                        print("This is the first and only time")
+                        # print("This is the first and only time")
                         self.master_list.append(["", "", ""])
                         self.first_time_b = False
                     self.unique_b = True
                     for sublist in self.master_list:
-                        print(sublist[0] + ' ' + order.text[i])
                         if sublist[0] == order.text[i]: # item exists in master_list
+                            #print("sublist[0]: {} \norder.text[i]: {}\n".format(sublist[0], order.text[i]))
                             print("It exists! I'm updating it.")
                             # add to total and revenue
+                            print("sublist[1]: {} \norder.quantity[i]: {}\n".format(sublist[1], order.quantity[i]))
                             sublist[1] += order.quantity[i]
                             if isinstance(order.quantity[i], int):
                                 sublist[2] += Decimal(int(order.quantity[i]) * Decimal(order.price[i]).quantize(self.cents, ROUND_HALF_UP)).quantize(self.cents, ROUND_HALF_UP) # TODO
@@ -999,13 +1105,18 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 self.master_list.pop(0)
             for subl in self.master_list:
                 subl[2] = "$" + str(subl[2])
-            print(str(self.master_list))
+            # print(str(self.master_list))
             table_model = table_model_class.TableModel(self, self.master_list, self.header)
             self.report_table.setModel(table_model)
             self.model = self.report_table.model()
-        except:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Report Error***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def handle_print_btn(self):
         """comment"""
@@ -1038,7 +1149,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
                 else:
                     report += "{}\n{} lbs\n{}\n\n".format(str(sublist[0]), str(sublist[1]), str(sublist[2]))
             report += "\nTotal Orders: " + str(self.total_orders) + "\nTotal Revenue: $" + str(self.total_revenue)
-            print(report)
+            # print(report)
             printer = QPrinter()
             doc = QTextDocument(report)
             dialog = QPrintDialog(printer)
@@ -1049,11 +1160,16 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             if dialog.exec_() == True:
                 try:
                     doc.print_(printer)
-                except:
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
                     print("?")
         else:
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Empty report. Please select dates with at least one order.***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
 
     #########################################
@@ -1120,15 +1236,6 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         """Show checkout frame"""
         self.bc_checkout_frame.setHidden(True)
 
-
-
-
-
-
-
-
-
-    # TODO
     def handle_load_reservation_btn(self):
         """"""
         if not self.bc_customer_name_field.text() == "":
@@ -1136,17 +1243,80 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.customers_table = self.db['customers']
             self.products_table = self.db['products']
 
-            res = self.reservations_table.find_one(id=int(self.bc_reservation_num_sbox.value()))
-            barcodes = ast.literal_eval(res['barcodes'])
-            quantities = ast.literal_eval(res['quantities'])
-            print("Barcodes: {}\nQuantities: {}".format(barcodes, quantities))
-            self.current_reservation = reservation.Reservation(res['id'], res['customer_id'], res['r_date'], barcodes, quantities)
-            print("Customer ID:" + str(self.current_reservation.customer_id))
-            cust = self.customers_table.find_one(id=self.current_reservation.customer_id)
-            self.bc_current_customer = customer.Customer(cust['id'], cust['name'], cust['point_balance'], cust['is_active'], cust['receipts'], cust['reservations']) # id, name, pointBalance, activityStatus=True, receipts=None, reservations=None)
-            print("Customer: " + str(self.bc_current_customer.customer_name))
+            try:
+                if self.bc_customer_name_field.text().isdigit():
+                    try:
+                        self.cust = self.customers_table.find_one(id=int(self.bc_customer_name_field.text()))
+                        print("customer found! (id) {}".format(self.cust['id']))
+                    except Exception as e:
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+                        print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
 
-            self.load_reservation(self.current_reservation.barcodes, self.current_reservation.quantities)
+                        self.set_status_style("red")
+                        self.statusbar.showMessage("***Invalid Customer ID***", 4000)
+                        winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+                else:
+                    try:
+                        self.cust = self.customers_table.find_one(name=self.bc_customer_name_field.text())
+                        print("customer found! (name) {}".format(self.cust['id']))
+                    except Exception as e:
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+                        print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
+                        self.set_status_style("red")
+                        self.statusbar.showMessage("***Invalid Customer Name***", 4000)
+                        winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+                try:
+                    if self.cust['point_balance'] is None:
+                        cu_id = self.cust['id']
+                        self.customers_table.update(dict(name=self.cust['name'], point_balance=0, is_active=1), ['name'])
+                        self.cust = self.customers_table.find_one(id=cu_id)
+                    self.res = self.reservations_table.find_one(id=int(self.bc_reservation_num_sbox.value()))
+                    print("Customer ID: {}\nRes Customer ID: {}".format(self.cust['id'], self.res['customer_id']))
+                    if self.cust['id'] == self.res['customer_id']:
+                        barcodes = ast.literal_eval(self.res['barcodes'])
+                        quantities = ast.literal_eval(self.res['quantities'])
+                        # print("Barcodes: {}\nQuantities: {}".format(barcodes, quantities))
+                        self.current_reservation = reservation.Reservation(self.res['id'], self.res['customer_id'], self.res['r_date'], barcodes, quantities)
+                        # print("Customer ID:" + str(self.current_reservation.customer_id))
+
+                        self.bc_current_customer = customer.Customer(self.cust['id'], self.cust['name'], self.cust['point_balance'], self.cust['is_active'], self.cust['receipts'], self.cust['reservations']) # id, name, pointBalance, activityStatus=True, receipts=None, reservations=None)
+                        # print("Customer: " + str(self.bc_current_customer.customer_name))
+    
+                        self.load_reservation(self.current_reservation.barcodes, self.current_reservation.quantities)
+                    else:
+
+                        self.set_status_style("red")
+                        self.statusbar.showMessage("***This Customer does not have a reservation by that number***", 4000)
+                        winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+                    print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
+                    self.set_status_style("red")
+                    self.statusbar.showMessage("***Error, no reservation found***", 4000)
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+
+            except Exception as e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
+                self.set_status_style("red")
+                self.statusbar.showMessage("***Invalid Entry***", 4000)
+                winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+        else:
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
+            self.set_status_style("red")
+            self.statusbar.showMessage("***Please Enter Customer Name***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def load_reservation(self, barcodes, quantities):
         self.barcodes = barcodes
@@ -1154,25 +1324,32 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
         for x in range(0, len(self.barcodes)):
             try:
-                print("Barcode: {}".format(self.barcodes[x]))
+                # print("Barcode: {}".format(self.barcodes[x]))
                 result = self.products_table.find_one(barcode=int(self.barcodes[x]))
-                print("Get here?")
-                print("Result: {}".format(result['name']))
+                # print("Get here?")
+                # print("Result: {}".format(result['name']))
                 self.res_current_product = product.Product(result['name'], result['barcode'], result['available_units'], result['price'], result['customer_price'], result['weigh_b'], result['provider'])  # product_name, product_barcode, product_available, product_price, customer_price, weigh, product_provider)
                 self.res_quantity = self.quantities[x]
-                print("Current Product: {}".format(self.res_current_product))
-                print("0")
+                # print("Current Product: {}".format(self.res_current_product))
+                # print("0")
                 self.res_handle_add_item()
             except Exception as e:
-                print("Error: {}".format(repr(e)))
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
 
     def res_handle_add_item(self):
         """Add item to receipt and lists"""
-        print("1")
         # Store barcode, quantity/weight, price for receipt storage
-        self.receipt_names.append(self.res_current_product.barcode)
-        self.receipt_text.append(self.res_current_product.name)
-        self.receipt_quantity.append(self.res_quantity)
+        self.receipt_names.append(str(self.res_current_product.barcode)) #TODO
+        self.receipt_text.append(str(self.res_current_product.name))
+        if '.' in self.res_quantity:
+            self.res_quantity = float(self.res_quantity)
+            print("We have a float! {}".format(self.res_quantity))
+        else:
+            self.res_quantity = int(self.res_quantity)
+            print("We have an int! {}".format(self.res_quantity))
+        self.receipt_quantity.append(self.res_quantity)  # CANNOT BE STRINGS.
 
         self.receipt_price.append(str(self.res_current_product.customer_price))
         self.res_update_receipt()
@@ -1237,18 +1414,25 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.calculate_item_subtotal()
             self.bc_barcode_search_field.setText("")
             self.bc_btn_frame.setEnabled(True)
-        except:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Invalid Barcode***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def calculate_item_subtotal(self):
         try:
             if self.current_product.weigh_b:
-                self.bc_subtotal_lbl.setText(str(Decimal(self.bc_weight_sbox.value() * self.current_product.customer_price).quantize(self.cents, ROUND_HALF_UP)))
+                self.bc_subtotal_lbl.setText(str(Decimal(Decimal(self.bc_weight_sbox.value()) * Decimal(self.current_product.customer_price)).quantize(self.cents, ROUND_HALF_UP)))
             else:
-                self.bc_subtotal_lbl.setText(str(Decimal(self.bc_quantity_sbox.value() * self.current_product.customer_price).quantize(self.cents, ROUND_HALF_UP)))
-        except:
-            print("Error")
+                self.bc_subtotal_lbl.setText(str(Decimal(Decimal(self.bc_quantity_sbox.value()) * Decimal(self.current_product.customer_price)).quantize(self.cents, ROUND_HALF_UP)))
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
 
     def handle_add_item(self):
         """Add item to receipt and lists"""
@@ -1303,14 +1487,13 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
 
     def handle_remove_item(self):
         """Removes selected item from listview and receipt lists"""
-        print("Before Item Removal")
-        print(str(self.receipt_names))
-        print(str(self.receipt_quantity))
-        print(str(self.receipt_price))
-
+        # print("Before Item Removal")
+        # print(str(self.receipt_names))
+        # print(str(self.receipt_quantity))
+        # print(str(self.receipt_price))
         try:
             row = self.bc_receipt_listview.selectedIndexes()[0].row()
-            print("Row: []".format(row))
+            # print("Row: []".format(row))
             # UPDATE TOTALS
             if isinstance(self.receipt_quantity[row], int):
                 self.subtotal -= Decimal(float(self.receipt_quantity[row]) * float(self.receipt_price[row])).quantize(self.cents, ROUND_HALF_UP)
@@ -1336,14 +1519,19 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             self.receipt_quantity.pop(row)
             self.receipt_price.pop(row)
 
-            print("After Item Removal")
-            print(str(self.receipt_names))
-            print(str(self.receipt_quantity))
-            print(str(self.receipt_price))
+            # print("After Item Removal")
+            # print(str(self.receipt_names))
+            # print(str(self.receipt_quantity))
+            # print(str(self.receipt_price))
 
-        except IndexError:  # If no items are selected
+        except IndexError as e:  # If no items are selected
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
+
             self.set_status_style("red")
             self.statusbar.showMessage("***Index Error--Please select an item***", 4000)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
 
     def update_inventory(self):
         self.products_table = self.db['products']
@@ -1352,7 +1540,7 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
             if prod['weigh_b']:
                 new_quantity = Decimal(prod['available_units']).quantize(self.cents, ROUND_HALF_UP) - Decimal(self.receipt_quantity[i]).quantize(self.cents, ROUND_HALF_UP)
             else:
-                new_quantity = int(prod['available_units']) - self.receipt_quantity[i]
+                new_quantity = int(prod['available_units']) - int(self.receipt_quantity[i])
             self.products_table.update(dict(barcode=prod['barcode'], available_units=str(new_quantity)), ['barcode'])
 
     def launch_payment_dialog(self):
@@ -1370,12 +1558,24 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         self.receipt_other.append(str(Decimal(self.total).quantize(self.cents, ROUND_HALF_UP)))
         self.receipt_date = datetime.datetime.now().strftime("%m/%d/%Y")
         self.receipt_date_time = int(datetime.datetime.now().timestamp())
-        print(str(self.receipt_date))
+        # print(str(self.receipt_date))
 
-        header = "Smith's Grocery\n\n123 ABC Lane\nLogan,UT 84321\n555-435-1234\n\n{}\nCashier: {}\nPayment Method: {}\nReceipt ID: {}\n\n_______________________________\n".format(self.receipt_other[1], self.receipt_other[2], self.receipt_other[3], self.receipt_other[0])
+        if self.payment_dialog.current_customer is not None:
+            customer_id = self.payment_dialog.current_customer.customer_id
+        else:
+            customer_id = None
+
+        header = "Smith's Grocery\n\n123 ABC Lane\nLogan,UT 84321\n555-435-1234\n\n{}\nCashier: {}\nCustomer ID: {}\nPayment Method: {}\nReceipt ID: {}\n\n_______________________________\n".format(self.receipt_other[1], self.receipt_other[2], customer_id, self.receipt_other[3], self.receipt_other[0])
         footer = "_______________________________\nSubtotal: {}\nTax: {}\n\nTotal: {}".format(self.bc_r_subtotal_lbl.text(), self.bc_tax_lbl.text(), self.bc_total_lbl.text())
         receipt = ""
         receipt += header
+
+        print("Names: " + str(self.receipt_names))
+        print("Prices: " + str(self.receipt_price))
+        print("Names: " + str(self.receipt_quantity))
+        print("Text: " + str(self.receipt_text))
+        print("Other: " + str(self.receipt_other))
+
         for i in range(0, len(self.receipt_names)):
             if isinstance(self.receipt_quantity[i], int):
                 receipt += (self.receipt_text[i] + ' (' + str(self.receipt_quantity[i]) + ')' + '\n$' + str(int(self.receipt_quantity[i]) * float(self.receipt_price[i])) + '\n\n')
@@ -1388,22 +1588,17 @@ class MainWindow(QMainWindow, smith_ui.Ui_main_window):
         dialog = QPrintDialog(printer)
         dialog.setModal(True)
         dialog.setWindowTitle("Print Receipt")
-        print("Names: " + str(self.receipt_names))
-        print("Prices: " + str(self.receipt_price))
-        print("Names: " + str(self.receipt_quantity))
-        print("Text: " + str(self.receipt_text))
-        print("Other: " + str(self.receipt_other))
+
 
         # dialog.addEnabledOption(QAbstractPrintDialog.PrintSelection)
         if dialog.exec_() == True:
             try:
                 doc.print_(printer)
-            except:
+            except Exception as e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print("Error: {}, {}, {}".format(exc_type, fname, exc_tb.tb_lineno))
                 print("?")
-        if self.payment_dialog.current_customer is not None:
-            customer_id = self.payment_dialog.current_customer.customer_id
-        else:
-            customer_id = None
         self.receipts_table = self.db['receipts']
         self.receipts_table.insert(dict(date=str(self.receipt_date), other=str(self.receipt_other), name=str(self.receipt_names), quantity=str(self.receipt_quantity),
                                         price=str(self.receipt_price), text=str(self.receipt_text), r_id=self.receipt_other[0], date_time=self.receipt_date_time, customer_id=customer_id))
