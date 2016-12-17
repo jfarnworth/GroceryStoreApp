@@ -1,0 +1,270 @@
+/************************/
+/** Contents           **/
+/** ------------------ **/
+/**  1. Global         **/
+/**  2. Navigation     **/
+/**  3. Off-canvas Nav **/
+/**  4. Gen. Layout    **/
+/**  5. Show-For-Small **/
+/************************/
+
+/****************/
+/** 1. Global **/
+/****************/
+* {
+  -webkit-padding-start: 0;
+}
+
+html, body {
+  background-color: #1849a5;
+  margin:0;
+  padding:0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+header {
+  display: block;
+  height: 50px;
+}
+
+
+/******************************************/
+/** 3. Off-canvas-menu for small screens **/
+/******************************************/
+/*input.nav-toggle {
+  position: absolute;
+  clip: rect(0, 0, 0, 0);
+  margin: 20px;
+  right: 20px;
+}
+
+label[for="nav-toggle"] {
+  position: fixed;
+  right: 15px;
+  top: 10px;
+  z-index: 3;
+  cursor: pointer;
+  color: #333333;
+}
+
+input.nav-toggle + label, .site-wrap {
+  transition: right 0.5s;
+}
+
+input.nav-toggle:checked ~ .site-wrap {
+  right: 100px;
+  box-shadow: 0 0 5px 5px rgba(0,0,0,0.5);
+}
+
+div.small-nav {
+  height: 100%;
+  position: fixed;
+  top: 50px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: #555555;
+}
+
+div.small-nav > ul {
+  list-style-type: none;
+  width:75px;
+}
+
+div.small-nav > ul > li {
+  margin: 20px;
+}*/
+
+/*******************************/
+/** 4. General layout classes **/
+/*******************************/
+.site-wrap {
+  min-height: 100%;
+  min-width: 100%;
+  background-color: white;
+  position: relative;
+  top: -20px;
+  bottom: 100%;
+  right: 0;
+  z-index: 1;
+}
+
+.right {
+  float: right;
+}
+
+.left {
+  float: left;
+}
+
+.middle {
+  vertical-align: middle;
+  display: table-cell;
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  background-color: #FFFFFF;
+}
+
+.site-wrap {
+  background-color: transparent;
+}
+
+.wrapper {
+  display: table;
+  height: inherit;
+  margin: 0 auto;
+}
+
+.center {
+  text-align: center;
+}
+
+.show-for-small {
+  display:none;
+}
+
+/******************************/
+/** 5. Media query targeting **/
+/** medium to small screens  **/
+/******************************/
+/*@media only screen and (max-width: 1079px){
+  html, body {
+    background-color: transparent;
+    margin:0;
+    padding:0;
+  }
+
+  .site-wrap {
+    background-color: #FFFFFF;
+  }
+
+  .container {
+    width: 100%;
+  }
+
+  .show-for-small {
+    display:block;
+  }
+
+  .hide-for-small {
+    display:none;
+  }
+}*/
+
+
+/****************************
+*       Index Content       *
+****************************/
+*{
+	padding: 0;
+	border: 0;
+	margin: 0;
+	font-family: century gothic, arial, "Lucida Sans Unicode", sans-serif;
+}
+
+#content{
+	width: 1080px;
+	height:906px;
+	margin: 0 auto;
+}
+
+.signInForm{
+	padding-top: 100px;
+	position: relative;
+	width: 375px;
+	margin: 0 auto;
+	color: #FFF;
+	margin-bottom: -270px;
+	z-index: 100;
+}
+
+.signInForm input[type=submit], .signUpForm input[type=submit] {
+  display: block;
+	padding:5px 15px;
+	background: #006dff;
+	width: 140px;
+	height: 40px;
+	font-size: 18px;
+	margin: 10px auto;
+	color: #FFF;
+	border:0 none;
+}
+
+.signInForm input[type=submit]:hover {
+  background: #0900ff;
+}
+
+.signInBox{
+	width: 500px;
+	height: 300px;
+	margin: 0 auto;
+	opacity: .5;
+ 	background-color: #33364d;
+	z-index: -100;
+	margin-top: -290px;
+ }
+
+.signInForm input[type=text], .signInForm input[type=number] {
+	width: 360px;
+	height: 15px;
+	padding: 15px;
+	margin: 10px;
+	margin-left: -10px;
+	font-size: 18px;
+ }
+
+.signInForm label{
+	font-size: 13px;
+}
+
+.login-help{
+	font-size: 13px;
+}
+
+.login-help a {
+	font-size: 13px;
+	color: #63b193;
+	text-decoration: none;
+	display: block;
+	text-align: center;
+}
+
+.login-help{
+	text-align: center;
+}
+ .signUpForm{
+ 	padding-top: 50px;
+ 	position: relative;
+ 	width: 375px;
+ 	margin: 0 auto;
+ 	color: #FFF;
+ 	margin-bottom: -270px;
+ 	z-index: 100;
+ }
+
+ .signUpBox{
+   width: 500px;
+   height: 295px;
+   margin: 0 auto;
+   opacity: .5;
+   background-color: #9090e9;
+   margin-top: -260px;
+   z-index: -100;
+  }
+
+	.signInForm h2, .signUpForm h2 {
+		font-weight: normal;
+	}

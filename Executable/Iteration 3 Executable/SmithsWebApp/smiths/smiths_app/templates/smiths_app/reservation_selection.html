@@ -1,0 +1,150 @@
+{% load static from staticfiles %}
+{% load smiths_extras %}
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Manage Reservations</title>
+    <link rel="stylesheet" href="{% static 'css/reservation.css' %}">
+</head>
+
+<body>
+    <div id="navBox"></div>
+    <div id="box">
+
+            <div id="nav">
+                <form method="POST" action="/reservations/{{ user_name }}/{{ user_id }}/">
+                 {% csrf_token %}
+                    <div class="btn" id="newRes">
+                        <p class="submit">
+                            <input type="submit" name="newRes" value="Create New Reservation">
+                        </p>
+                    </div>
+                </form>
+                <form method="POST" action="/reservations/{{ user_name }}/{{ user_id }}/">
+                    {% csrf_token %}
+                    <input type="hidden" name="delete_id" value="{{ reservation.id }}">
+                    <div class="btn" id="deleteRes">
+                        <p class="submit">
+                            <input type="submit" name="deleteRes" value="Delete Reservation">
+                        </p>
+                    </div>
+                </form>
+                <div class="loadReservation">
+                    <form method="POST" action="/reservations/{{ user_name }}/{{ user_id }}/{{ reservation.id|closing_slash }}">
+                        {% csrf_token %}
+                        <p>
+                            {% if reservation %}
+                                <input type="number" name="loadReservation" value="{{ reservation.id }}" placeholder="Reservation ID: {{ reservation.id }}" required>
+                            {% else %}
+                                <input type="number" name="loadReservation" value="" placeholder="Enter a Reservation ID" required>
+                            {% endif %}
+                        </p>
+                        <p class="submit">
+                            <input type="submit" name="loadRes" value="Load Reservation">
+                        </p>
+                    </form>
+                </div>
+
+                <div class="btn" id="logOut">
+                    <form method="POST" action="/reservations/{{ user_name }}/{{ user_id }}/{{ reservation.id|closing_slash }}">
+                    {% csrf_token %}
+                    <p class="submit">
+                        <input type="submit" name="logOut" value="Log Out" style="width: 150px;">
+                    </p>
+                    </form>
+                </div>
+
+            </div>
+
+            <div id="resHeader">
+                <div class="productNameCol">
+                    <h2 id="productNameH">Product Name</h2>
+                </div>
+
+                <div class="quantityCol">
+                    <h2 id="quantityH">Quantity/Weight</h2>
+                </div>
+
+                <div class="priceCol">
+                    <h2 id="priceH">Price</h2>
+                </div>
+            </div>
+
+            <hr id="headerHR">
+            {% if msg %}
+                <div id="message">
+                  <p>{{ msg }}</p>
+                </div>
+            {% endif %}
+            <form id="reportbody-form" method="POST" action="/reservations/{{ user_name }}/{{ user_id }}/{{ reservation.id|closing_slash }}">
+                {% csrf_token %}
+            <div id="reportBody">
+
+                {% for product in products %}
+                <div class="resLine">
+                    <div class="productNameCol">
+                        <p class="productName">{{ product.name }}</p>
+                    </div>
+
+                    <div class="quantityCol">
+                        <div class="quantity">
+                            {% if product.weigh_b %}<!-- if product.weigh_b:-->
+                                {% if product.barcode in reserved_dict %}
+                                    <input type="number" name="{{ product.barcode }}-quantity" value="{{ reserved_dict|get_item:product.barcode }}" placeholder="Quantity" step="any" min=0 />
+                                {% else %}
+                                    <input type="number" name="{{ product.barcode }}-quantity" value="" placeholder="Quantity" step="any" min=0 />
+                                {% endif %}
+                            {% else %}<!-- else:-->
+                                {% if product.barcode in reserved_dict %}
+                                    <input type="number" name="{{ product.barcode }}-amount" value="{{ reserved_dict|get_item:product.barcode }}" placeholder="Amount" step="any" min=0 />
+                                {% else %}
+                                    <input type="number" name="{{ product.barcode }}-amount" value="" placeholder="Amount" step="any" min=0 />
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="priceCol">
+                        <p class="price">$ {{ product.customer_price }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div> <!-- reportBody -->
+
+            <div class="btn">
+                <p class="submit">
+                    {% if reservation %}
+                        <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                        <input type="submit" name="updateRes" value="Update Reservation" id="updateRes">
+                    {% else %}
+                        <input type="submit" name="saveRes" value="Make Reservation" id="updateRes">
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="resLine">
+                <p class="instructions">To process your reservation: Please give your cashier your Customer Name, Customer ID, and your Reservation ID</p>
+                </p>
+            </div>
+
+            <div class="resLine">
+                <div class="productNameCol">
+                    <p class="completion">Customer Name: {{ user_name }}</p> <!-- Customer Name: + customer.name -->
+                </div>
+
+                <div class="quantityCol">
+                    <p class="completion">Customer ID: {{ user_id }}</p> <!-- Customer ID: + customer.id -->
+                </div>
+                <div class="priceCol">
+                    <p class="completion">Reservation ID:  {{ reservation.id }}</p> <!-- Reservation ID: + reservation.id -->
+                </div>
+            </div>
+
+        </form>
+    </div>
+</body>
+
+</html>

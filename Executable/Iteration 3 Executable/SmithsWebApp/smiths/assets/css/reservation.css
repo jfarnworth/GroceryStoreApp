@@ -1,0 +1,250 @@
+* {
+margin:0;
+padding:0;
+border: 0;
+font-size: 100%;
+font: inherit;
+font-family: "Arial", sans-serif;
+color: #575757;
+}
+
+h1 {
+  font-size: 40px;
+  font-weight: bold;
+}
+
+h2 {
+  font-size: 20px;
+  margin-bottom: 30px;
+  margin-top: 30px;
+  font-weight: normal;
+}
+
+h3 {
+  font-size: 15px;
+}
+
+p {
+  font-size: 15px;
+  line-height: 28px;
+}
+
+
+.loadReservation{
+	position: relative;
+	width: 375px;
+	margin: 0 auto;
+	color: #FFF;
+	z-index: 100;
+}
+
+.loadReservation .submit{
+  width: 360px;
+}
+
+.loadReservation input[type=submit], .loadReservation input[type=submit] {
+  display: block;
+	padding:5px 15px;
+	background: #003556;
+	width: 200px;
+	height: 40px;
+	font-size: 18px;
+	margin: 10px auto;
+	color: #FFF;
+	border:0 none;
+}
+
+.loadReservation input[type=submit]:hover {
+  background: #8483b1;
+}
+
+.btn input[type=submit], .btn input[type=submit] {
+  display: block;
+	padding:5px 15px;
+	background: #003556;
+	width: 250px;
+	height: 40px;
+	font-size: 18px;
+	margin-top: 14px;
+	margin-bottom: -43px;
+	color: #FFF;
+	border:0 none;
+}
+
+.btn input[type=submit]:hover {
+  background: #8483b1;
+}
+
+#deleteRes {
+  margin-top: 65px;
+  margin-bottom: -104px;
+}
+
+#updateRes{
+  margin: 0 auto;
+  margin-top: 60px;
+  margin-bottom: 30px;
+}
+
+#message {
+    color: white;
+    width: 910px;
+    background-color: rgb(86, 47, 47);
+    height: 30px;
+    padding: 5px 25px;
+    margin: 0px auto 10px;
+}
+
+#message p {
+  color: #f5f5f5;
+}
+
+#logOut {
+    float: right;
+    margin-top: -57px;
+    width: 236px;
+}
+
+.loadReservation input[type=text], .loadReservation input[type=number] {
+	width: 360px;
+	height: 15px;
+	padding: 15px;
+	font-size: 18px;
+ }
+
+ .quantity input[type=number] {
+ 	width: 80px;
+ 	height: 10px;
+ 	padding: 8px;
+ 	font-size: 16px;
+  border: solid 1px #c7c7c7;
+  }
+
+	.loadReservation h2, .loadReservation h2 {
+		font-weight: normal;
+	}
+
+#box {
+  width: 960px;
+  margin: 0 auto;
+}
+
+#navBox {
+  height: 170px;
+  margin-bottom: -147px;
+  background-color: #1849a5;
+}
+
+#nav {
+  height: 120px;
+  background-color: #1849a5;
+}
+
+a {
+  text-decoration: none;
+}
+
+form {
+  float: left;
+  color: white;
+  font-size: 18px;
+  width: 960px;
+}
+
+#studentHeader {
+  clear: both;
+  height: 50px;
+}
+
+#studentHeader #studentName {
+  float: left;
+  width: 375px;
+}
+
+#studentHeader #studentDept {
+  clear: both;
+  font-size: 20px;
+  width: 534px;
+}
+
+#resHeader {
+  clear: both;
+  height: 55px;
+}
+
+#resHeader h2 {
+  font-weight: bold;
+}
+
+.productNameCol{
+  float: left;
+  width: 320px;
+  height: 1px;
+}
+
+.quantityCol{
+  float: left;
+  width: 230px;
+  height: 1px;
+}
+
+.priceCol{
+  float: left;
+  width: 190px;
+  height: 1px;
+}
+
+#resHeader #productNameH {
+  float: left;
+}
+
+#resHeader #quantityH {
+  float: right;
+}
+
+#resHeader #priceH {
+  float: right;
+}
+
+#headerHR {
+  clear: both;
+  background-color: #575757;
+  height: 2px;
+  margin-bottom: 10px;
+}
+
+#resHeader {
+  clear: both;
+}
+
+#reportBody .resLine {
+  clear: both;
+  height: 23px;
+}
+
+.resLine {
+  clear: both;
+  height: 23px;
+}
+
+.instructions{
+  font-style: italic;
+  font-size: 18px;
+  clear: both;
+}
+
+#reportBody .productName {
+  float: left;
+}
+
+#reportBody .quantity {
+  float: right;
+}
+
+#reportBody .price {
+  float: right;
+}
+
+.completion {
+  float: right;
+}

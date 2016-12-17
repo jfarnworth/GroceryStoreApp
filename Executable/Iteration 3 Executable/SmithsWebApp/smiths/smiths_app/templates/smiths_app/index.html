@@ -1,0 +1,48 @@
+{% load static from staticfiles %}
+<!doctype html>
+<html>
+
+<head>
+    <title>Smith's Grocery Online</title>
+    <meta name="charset" content="utf-8">
+    <meta name="description" content="CS2610 Project">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/smiths.css' %}">
+</head>
+
+<body>
+    <header>
+
+    </header>
+    <div class="site-wrap">
+        <div id="content">
+            {% if msg %}
+            <div id="message">
+                <p>{{ msg }}</p>
+            </div>
+            {% endif %}
+
+            <div class="signInForm">
+                <div class="login">
+                    <h2 style="text-align: center;"><strong>Customer Sign In</strong></h2>
+                    <form method="post" action="/index/">
+                        {% csrf_token %}
+                        <p><input type="text" name="cust_name" value="" placeholder="Customer Name" required></p>
+                        <p><input type="number" name="cust_id" value="" placeholder="Customer ID" min=0></p>
+                        <p class="new_customer">
+                            <label>
+                      <input type="checkbox" name="new_customer" id="new_customer">
+                      I'm a new customer, I haven't signed up yet.
+                    </label>
+                        </p>
+                        <p class="submit"><input type="submit" name="commit" value="Sign In"></p>
+
+                        <!--p class="submit"><input type="submit" name="commit" value="Sign In"></p-->
+                    </form>
+                </div>
+            </div>
+            <div class="signUpBox"></div>
+        </div>
+    </div>
+</body>
+
+</html>
